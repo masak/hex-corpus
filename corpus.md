@@ -331,7 +331,6 @@ Here are all hotshots paired up against all mediocres:
     * http://littlegolem.net/jsp/game/game.jsp?gid=521107
 1. Pawel Grabowski vs Adam
     * http://littlegolem.net/jsp/game/game.jsp?gid=331644
-    * http://littlegolem.net/jsp/game/game.jsp?gid=167857
 1. Pawel Grabowski vs Maciej Celuch
     * http://littlegolem.net/jsp/game/game.jsp?gid=245028
     * http://littlegolem.net/jsp/game/game.jsp?gid=235604

@@ -261,8 +261,6 @@ Here are all hotshots paired up against all mediocres:
 
 1. Jason Kidd vs Marius Halsor
     * http://littlegolem.net/jsp/game/game.jsp?gid=1356568
-    * http://littlegolem.net/jsp/game/game.jsp?gid=1023575
-    * http://littlegolem.net/jsp/game/game.jsp?gid=1022785
     * http://littlegolem.net/jsp/game/game.jsp?gid=732686
     * http://littlegolem.net/jsp/game/game.jsp?gid=114961
     * http://littlegolem.net/jsp/game/game.jsp?gid=76540
@@ -309,8 +307,6 @@ Here are all hotshots paired up against all mediocres:
     * http://littlegolem.net/jsp/game/game.jsp?gid=211309
     * http://littlegolem.net/jsp/game/game.jsp?gid=187988
     * http://littlegolem.net/jsp/game/game.jsp?gid=160150
-1. bachkiesel vs Maciej Celuch
-    * http://littlegolem.net/jsp/game/game.jsp?gid=221174
 1. bachkiesel vs Marius Halsor
     * http://littlegolem.net/jsp/game/game.jsp?gid=76538
     * http://littlegolem.net/jsp/game/game.jsp?gid=60680
@@ -329,8 +325,6 @@ Here are all hotshots paired up against all mediocres:
     * http://littlegolem.net/jsp/game/game.jsp?gid=1198480
 1. Pawel Grabowski vs Art Duval
     * http://littlegolem.net/jsp/game/game.jsp?gid=521107
-1. Pawel Grabowski vs Adam
-    * http://littlegolem.net/jsp/game/game.jsp?gid=331644
 1. Pawel Grabowski vs Maciej Celuch
     * http://littlegolem.net/jsp/game/game.jsp?gid=245028
     * http://littlegolem.net/jsp/game/game.jsp?gid=235604
@@ -440,7 +434,6 @@ Here are all hotshots paired up against all mediocres:
 1. Alan Turing vs Frode Lillevold
     * http://littlegolem.net/jsp/game/game.jsp?gid=108219
 1. svandal vs Marius Halsor
-    * http://littlegolem.net/jsp/game/game.jsp?gid=97071
     * http://littlegolem.net/jsp/game/game.jsp?gid=50785
     * http://littlegolem.net/jsp/game/game.jsp?gid=48024
     * http://littlegolem.net/jsp/game/game.jsp?gid=45214
@@ -457,9 +450,7 @@ Here are all hotshots paired up against all mediocres:
 1. lazar vs Daniel Sepczuk
     * http://littlegolem.net/jsp/game/game.jsp?gid=770571
 1. lazar vs Marius Halsor
-    * http://littlegolem.net/jsp/game/game.jsp?gid=253360
     * http://littlegolem.net/jsp/game/game.jsp?gid=189439
-    * http://littlegolem.net/jsp/game/game.jsp?gid=137826
     * http://littlegolem.net/jsp/game/game.jsp?gid=100503
 1. lazar vs Maciej Celuch
     * http://littlegolem.net/jsp/game/game.jsp?gid=234763
@@ -497,7 +488,6 @@ Here they are all paired up against each other:
 1. Jason Kidd vs zapi
     * http://littlegolem.net/jsp/game/game.jsp?gid=1168710
     * http://littlegolem.net/jsp/game/game.jsp?gid=1168709
-    * http://littlegolem.net/jsp/game/game.jsp?gid=1023591
     * http://littlegolem.net/jsp/game/game.jsp?gid=942196
 1. Jason Kidd vs Daniel Feito
     * http://littlegolem.net/jsp/game/game.jsp?gid=1402099
@@ -513,7 +503,6 @@ Here they are all paired up against each other:
 1. Jason Kidd vs lazar
     * http://littlegolem.net/jsp/game/game.jsp?gid=117242
 1. Jason Kidd vs Martin
-    * http://littlegolem.net/jsp/game/game.jsp?gid=97057
     * http://littlegolem.net/jsp/game/game.jsp?gid=68593
     * http://littlegolem.net/jsp/game/game.jsp?gid=27524
     * http://littlegolem.net/jsp/game/game.jsp?gid=26720
@@ -537,7 +526,6 @@ Here they are all paired up against each other:
     * http://littlegolem.net/jsp/game/game.jsp?gid=1315541
     * http://littlegolem.net/jsp/game/game.jsp?gid=1082590
 1. leandro vs Alan Turing
-    * http://littlegolem.net/jsp/game/game.jsp?gid=1291049
     * http://littlegolem.net/jsp/game/game.jsp?gid=1197630
     * http://littlegolem.net/jsp/game/game.jsp?gid=391457
     * http://littlegolem.net/jsp/game/game.jsp?gid=250713
@@ -598,8 +586,6 @@ Here they are all paired up against each other:
     * http://littlegolem.net/jsp/game/game.jsp?gid=183860
     * http://littlegolem.net/jsp/game/game.jsp?gid=182465
     * http://littlegolem.net/jsp/game/game.jsp?gid=177611
-1. Pawel Grabowski vs Martin
-    * http://littlegolem.net/jsp/game/game.jsp?gid=136501
 1. zapi vs Daniel Feito
     * http://littlegolem.net/jsp/game/game.jsp?gid=1320548
     * http://littlegolem.net/jsp/game/game.jsp?gid=984031
@@ -614,7 +600,6 @@ Here they are all paired up against each other:
     * http://littlegolem.net/jsp/game/game.jsp?gid=1022994
     * http://littlegolem.net/jsp/game/game.jsp?gid=977195
     * http://littlegolem.net/jsp/game/game.jsp?gid=977131
-    * http://littlegolem.net/jsp/game/game.jsp?gid=903403
     * http://littlegolem.net/jsp/game/game.jsp?gid=793101
     * http://littlegolem.net/jsp/game/game.jsp?gid=725202
 1. Daniel Feito vs lazar

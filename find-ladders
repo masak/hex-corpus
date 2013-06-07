@@ -5,6 +5,12 @@
 #
 # I.e. player 1 and player 2 keep moving always in the same row/column,
 # but always one step to the side.
+#
+# Finding these gets slightly complicated when one realizes that the
+# *moves* don't have to be back-to-back, only the stones themselves.
+# Usually it's the attacker that has the luxury of moving somewhere
+# else; the defender tends to be forced to respond in the ladder all
+# the time.
 
 sub number-of-moves($file) {
     given open($file) {
@@ -25,62 +31,139 @@ class Move {
     method Str { $.ladder ?? 'x' !! '.' }
 }
 
+class Location {
+    has $.row;
+    has $.col;
+
+    #  NW  NE
+    #    /\
+    # W |  | E
+    #    \/
+    #  SW  SE
+
+    method step($direction) {
+        sub deltas($_) {
+            return 0, +1 when 'E';
+            return +1, 0 when 'SE';
+            return +1, -1 when 'SW';
+            return 0, -1 when 'W';
+            return -1, 0 when 'NW';
+            return -1, +1 when 'NE';
+            die "Unknown direction '$_'";
+        }
+
+        my ($dr, $dc) = deltas $direction;
+        Location.new(:row($.row + $dr), :col($.col + $dc));
+    }
+
+    method back($direction) {
+        sub opposite($_) {
+            (hash <E W W E SE NW NW SE SW NE NE SW>){$_}
+                // die "Unknown direction '$_'";
+        }
+
+        self.step(opposite $direction);
+    }
+
+    method WHICH { "Location;$.row;$.col" }
+}
+
+class Ladder {
+    has $.next;
+    has Location $.loc;
+    has $.name;
+    has $.attack-dir;
+    has $.defense-dir;
+
+    method expects-move(Location $loc) {
+        my $dir = $!next eq 'attack' ?? $.attack-dir !! $.defense-dir;
+        $.loc.step($dir) === $loc;
+    }
+
+    method advance-move(Location $loc) {
+        $!next = $!next eq 'attack' ?? 'defense' !! 'attack';
+        $!loc = $loc;
+    }
+
+    method Str { $.name }
+}
+
+constant EMPTY = 'Empty';
+constant SIZE = 13;
+
 for @sorted-input-files -> $file {
     given open($file) {
         my @moves;
-        for .lines  {
-            when /^ [Black|White] ' places ' (\w)(\d+) '.' $/ {
-                my $row = +$1;
-                my $col = ord($0) - ord('a') + 1;
+        my @ladders;
+        my $name = 'a';
 
-                my $last-move = @moves[*-1];
-                my $second-last-move = @moves[*-2];
-                my $ladder = False; # until proven guilty
+        my %board;
+        sub color(Location $loc) {
+            return 'Outside'
+                if $loc.row < 0 || $loc.col < 0;
+            return 'Outside'
+                if $loc.row >= SIZE || $loc.col >= SIZE;
 
-                if $last-move ~~ Move && $second-last-move ~~ Move {
-                    sub check($dr, $d2r, $dc, $d2c) {
-                        $row == $last-move.row + $dr == $second-last-move.row + $d2r
-                        && $col == $last-move.col + $dc == $second-last-move.col + $d2c;
+            return %board{"$loc.row();$loc.col()"} // EMPTY;
+        }
+        sub place(Location $loc, $color) {
+            %board{"$loc.row();$loc.col()"} = $color;
+        }
+
+        for .lines {
+            when /^ (Black|White) ' places ' (\w)(\d+) '.' $/ {
+                my $player = ~$0;
+                my $opponent = $player eq 'Black' ?? 'White' !! 'Black';
+
+                my $row = +$2;
+                my $col = ord($1) - ord('a') + 1;
+                my $loc = Location.new(:$row, :$col);
+
+                place($loc, $player);
+
+                for @ladders -> $ladder {
+                    if $ladder.expects-move($loc) {
+                        $ladder.advance-move($loc);
+                        push @moves, $ladder;
+                        succeed;
                     }
-
-                    #  NW  NE
-                    #    /\
-                    # W |  | E
-                    #    \/
-                    #  SW  SE
-
-                    sub direction($_) {
-                        return 0, +1 when 'E';
-                        return +1, 0 when 'SE';
-                        return +1, -1 when 'SW';
-                        return 0, -1 when 'W';
-                        return -1, 0 when 'NW';
-                        return -1, +1 when 'NE';
-                        die "Unknown direction '$_'";
-                    }
-
-                    sub walk([$dir1, $dir2]) {
-                        my ($dr1, $dc1) = direction($dir1);
-                        my ($dr2, $dc2) = direction($dir2);
-                        check(-$dr2, -$dr2-$dr1, -$dc2, -$dc2-$dc1);
-                    }
-
-                    # There are eight ladder movements. For example, the one at the top of the
-                    # file is the one that follows the south edge counter-clockwise: ccw-s.
-
-                    sub cw-s { walk <SE NE> }
-                    sub cw-e { walk <NE W> }
-                    sub cw-n { walk <NW SW> }
-                    sub cw-w { walk <SW E> }
-                    sub ccw-s { walk <SW NW> }
-                    sub ccw-e { walk <E SW> }
-                    sub ccw-n { walk <NE SE> }
-                    sub ccw-w { walk <W NE> }
-
-                    $ladder = [||] cw-s, cw-e, cw-n, cw-w, ccw-s, ccw-e, ccw-n, ccw-w;
                 }
 
-                push @moves, Move.new(:$row, :$col, :$ladder);
+                for <NE SE>, <NW SW>,    # south edge
+                    <W NE>,  <SW E>,     # slanting east edge
+                    <SW NW>, <SE NE>,    # north edge
+                    <E SW>,  <NE W>      # slanting west edge
+                        -> $attack-dir, $defense-dir {
+
+                    sub add-new-ladder($next) {
+                        my $new-ladder = Ladder.new(
+                            :$next,
+                            :$loc,
+                            :$name,
+                            :$attack-dir,
+                            :$defense-dir,
+                        );
+                        ++$name;
+                        push @ladders, $new-ladder;
+                        push @moves, $new-ladder;
+                    }
+
+                    if color($loc.back($attack-dir)) eq $opponent
+                       && color($loc.step($defense-dir)) eq EMPTY {
+
+                        add-new-ladder('defense');
+                        succeed;
+                    }
+
+                    if color($loc.back($defense-dir)) eq $opponent
+                       && color($loc.back($defense-dir).back($attack-dir)) eq $player {
+
+                        add-new-ladder('attack');
+                        succeed;
+                    }
+                }
+
+                push @moves, '.';
             }
             when /^ [Black|White] ' resigns.' $/ {
                 push @moves, 'R';

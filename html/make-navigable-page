@@ -1,0 +1,147 @@
+my $HEADER = q:to /EOF/;
+    <!doctype html>
+    <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Games</title>
+        </head>
+        <body>
+    EOF
+
+my $GAME_DATA = "var game_data = [\n" ~ game_data() ~ "\n];";
+
+sub game_data {
+    join "\n", gather for "games-with-ladders".IO.lines {
+        /^ \s* (\S+) /
+            or die "Did not understand line: '$_'";
+        my $filename = ~$0;
+        given open($filename) {
+            sub rowcol($s) {
+                my $row = $s.substr(1) - 1;
+                my $col = $s.ord - 'a'.ord;
+                return "row: $row, col: $col";
+            }
+            sub move($_) {
+                when /^ :s (White|Black) places (\w+) '.' $/ {
+                    return '{ place: true, player: "' ~ $0.substr(0, 1)
+                           ~ '", ' ~ rowcol(~$1) ~ ' }';
+                }
+                when /^ :s (White|Black) resigns '.' $/ {
+                    return '{ resign: true, player: "' ~ $0.substr(0, 1) ~ '" }';
+                }
+                when /^ :s (White|Black) times out '.' $/ {
+                    return '{ timeout: true, player: "' ~ $0.substr(0, 1) ~ '" }';
+                }
+                when /^ :s Black swaps '.' $/ {
+                    return '{ swap: true }';
+                }
+                die "Unknown string '$_'";
+            }
+            take "    [" ~ .lines.map({ move $_ }).join(', ') ~ "],";
+            .close;
+        }
+        LAST { take "    []" } # easier than trying to remove the last comma
+    }
+}
+
+my $FOOTER = q:to /EOF/;
+        </body>
+        <script>
+            "use strict";
+
+            function textarea_position(el) {
+                if (el.selectionStart) {
+                    return el.selectionStart;
+                } else if (document.selection) {
+                    el.focus();
+
+                    var r = document.selection.createRange();
+                    if (r == null) {
+                        return 0;
+                    }
+
+                    var re = el.createTextRange(),
+                        rc = re.duplicate();
+                    re.moveToBookmark(r.getBookmark());
+                    rc.setEndPoint('EndToStart', re);
+
+                    return rc.text.length;
+                } 
+                return 0;
+            }
+
+            var textarea = document.getElementById('games'),
+                board = document.getElementById('board');
+
+            var upto = function (n) {
+                var range = [];
+                for (var i = 0; i < n; i++) {
+                    range.push(i);
+                }
+                return range;
+            };
+
+            var update_board = function () {
+                var cells = upto(13).map(function () {
+                    return upto(13).map(function () { return '.' });
+                });
+                var pos = textarea_position(textarea);
+                var newlines = textarea.value.substring(0, pos).match(/\n/g);
+                var row = newlines ? newlines.length : 0;
+                var col = pos - textarea.value.substring(0, pos).lastIndexOf("\n");
+                var move_num = col >= 16 ? col - 16 : 0;
+                var game = game_data[row];
+                var swap = function () {};
+                for (var i = 0; i < move_num; i++) {
+                    var move = game[i];
+                    if (move.place) {
+                        cells[move.row][move.col] = move.player;
+                        var this_move = move;
+                        var other_player = function (player) {
+                            return player === 'W' ? 'B' : 'W';
+                        };
+                        swap = function () {
+                            cells[this_move.row][this_move.col] = '.';
+                            cells[this_move.col][this_move.row] = other_player(this_move.player);
+                        };
+                    }
+                    if (move.swap) {
+                        swap();
+                    }
+                }
+                board.innerHTML = cells.map(function (row, i) {
+                    return "             ".substring(0, i) + row.join(" ");
+                }).join("\n") + "\n";
+            };
+
+            textarea.addEventListener('mouseup', update_board, false);
+            textarea.addEventListener('keyup', update_board, false);
+        </script>
+    </html>
+    EOF
+
+$FOOTER.=subst(/\n\h*\n/, "\n\n" ~ $GAME_DATA); # RAKUDO: heredocs don't quite work for this
+
+print $HEADER;
+say '<pre id="board">' ~ q:to/EOF/ ~ '</pre>';
+    . . . . . . . . . . . . .
+     . . . . . . . . . . . . .
+      . . . . . . . . . . . . .
+       . . . . . . . . . . . . .
+        . . . . . . . . . . . . .
+         . . . . . . . . . . . . .
+          . . . . . . . . . . . . .
+           . . . . . . . . . . . . .
+            . . . . . . . . . . . . .
+             . . . . . . . . . . . . .
+              . . . . . . . . . . . . .
+               . . . . . . . . . . . . .
+                . . . . . . . . . . . . .
+    EOF
+
+say '<textarea id="games" rows="30" cols="80">';
+for "games-with-ladders".IO.lines -> $game {
+    say $game;
+}
+say '</textarea>';
+print $FOOTER;

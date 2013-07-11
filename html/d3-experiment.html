@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        line {
+            stroke: black;
+            stroke-width: 1;
+        }
+    </style>
+</head>
+<body>
+</body>
+<script src="d3.v3.js"></script>
+
+<script>
+'use strict';
+
+var w = 700,
+    h = 500;
+
+var svg = d3.select('body')
+            .append('svg:svg')
+            .attr('width', w)
+            .attr('height', h);
+
+for (var row = 0; row < 13; row++) {
+    for (var col = 0; col < 13; col++) {
+        svg.append('svg:path')
+            .attr('x1', 5 + col * 20 + row * 10)
+            .attr('x2', 5 + col * 20 + row * 10)
+            .attr('y1', row * 20 + 10)
+            .attr('y2', row * 20 + 25);
+    }
+}
+
+for (var row = 0; row < 13; row++) {
+    for (var col = 0; col < 13; col++) {
+        svg.append('svg:line')
+            .attr('x1', 5 + col * 20 + row * 10)
+            .attr('x2', 5 + col * 20 + row * 10)
+            .attr('y1', row * 20 + 10)
+            .attr('y2', row * 20 + 25);
+        if (col < 12) {
+            svg.append('svg:line')
+                .attr('x1', 5 + col * 20 + row * 10)
+                .attr('x2', 15 + col * 20 + row * 10)
+                .attr('y1', row * 20 + 10)
+                .attr('y2', row * 20 + 5);
+            svg.append('svg:line')
+                .attr('x1', 15 + col * 20 + row * 10)
+                .attr('x2', 25 + col * 20 + row * 10)
+                .attr('y1', row * 20 + 5)
+                .attr('y2', row * 20 + 10);
+        }
+        else {
+            svg.append('svg:line')
+                .attr('x1', 25 + col * 20 + row * 10)
+                .attr('x2', 25 + col * 20 + row * 10)
+                .attr('y1', row * 20 + 10)
+                .attr('y2', row * 20 + 25);
+            svg.append('svg:line')
+                .attr('x1', 5 + col * 20 + row * 10)
+                .attr('x2', 15 + col * 20 + row * 10)
+                .attr('y1', row * 20 + 10)
+                .attr('y2', row * 20 + 5);
+            svg.append('svg:line')
+                .attr('x1', 15 + col * 20 + row * 10)
+                .attr('x2', 25 + col * 20 + row * 10)
+                .attr('y1', row * 20 + 5)
+                .attr('y2', row * 20 + 10);
+        }
+        if (col == 0 || row == 12 && col < 13) {
+            svg.append('svg:line')
+                .attr('x1', 5 + col * 20 + row * 10)
+                .attr('x2', 15 + col * 20 + row * 10)
+                .attr('y1', row * 20 + 25)
+                .attr('y2', row * 20 + 30);
+        }
+        if (row == 12 && col < 13) {
+            svg.append('svg:line')
+                .attr('x1', 15 + col * 20 + row * 10)
+                .attr('x2', 25 + col * 20 + row * 10)
+                .attr('y1', row * 20 + 30)
+                .attr('y2', row * 20 + 25);
+        }
+    }
+}
+</script>
+</html>

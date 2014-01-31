@@ -139,7 +139,7 @@ say '<pre id="board">' ~ q:to/EOF/ ~ '</pre>';
                 . . . . . . . . . . . . .
     EOF
 
-say '<textarea id="games" rows="30" cols="80">';
+say '<textarea id="games" rows="30" cols="120">';
 for "games-with-ladders".IO.lines -> $game {
     say $game;
 }

@@ -11,7 +11,7 @@ my $HEADER = q:to /EOF/;
 my $GAME_DATA = "var game_data = [\n" ~ game_data() ~ "\n];";
 
 sub game_data {
-    join "\n", gather for "games-with-ladders".IO.lines {
+    join "\n", gather for "html/games-with-ladders".IO.lines {
         /^ \s* (\S+) /
             or die "Did not understand line: '$_'";
         my $filename = ~$0;
@@ -140,7 +140,7 @@ say '<pre id="board">' ~ q:to/EOF/ ~ '</pre>';
     EOF
 
 say '<textarea id="games" rows="30" cols="120">';
-for "games-with-ladders".IO.lines -> $game {
+for "html/games-with-ladders".IO.lines -> $game {
     say $game;
 }
 say '</textarea>';

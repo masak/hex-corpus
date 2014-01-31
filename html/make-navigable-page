@@ -71,7 +71,8 @@ my $FOOTER = q:to /EOF/;
             }
 
             var textarea = document.getElementById('games'),
-                board = document.getElementById('board');
+                board = document.getElementById('board'),
+                move_counter = document.getElementById('move-counter');
 
             var upto = function (n) {
                 var range = [];
@@ -112,6 +113,7 @@ my $FOOTER = q:to /EOF/;
                 board.innerHTML = cells.map(function (row, i) {
                     return "             ".substring(0, i) + row.join(" ");
                 }).join("\n") + "\n";
+                move_counter.innerHTML = "" + move_num;
             };
 
             textarea.addEventListener('mouseup', update_board, false);
@@ -144,4 +146,6 @@ for "html/games-with-ladders".IO.lines -> $game {
     say $game;
 }
 say '</textarea>';
+
+say '<p>Move: <span id="move-counter">0</span>';
 print $FOOTER;

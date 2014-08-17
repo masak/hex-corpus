@@ -21,6 +21,9 @@ cells:
     . , ,
      . e .
 
+Here the semicolon marks the main cell of the link. The commas mark cells that
+need to be empty.
+
 Two different links may overlap. If they do, it may or may not be possible to
 use them both at the same time.
 
@@ -47,6 +50,11 @@ case that all three chains make up a single group.
 
 This process ends somewhere, with us unable to form bigger groups. Those groups
 which still have unused links between them are said to be **weakly connected**.
+Weak connectedness is an equivalence relation, but it doesn't allow the
+formation of bigger groups. `d` and `e` are weakly connected &mdash; and if
+the semicolon were filled with a friendly piece, that piece would form a new
+chain `f`, and the new links between all the chains would allow us to form the
+group `def`.
 
 Now, here is the thing:
 

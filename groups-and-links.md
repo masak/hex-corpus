@@ -59,19 +59,20 @@ group `def`.
 Now, here is the thing:
 
 * In some cases, the above algorithm might find a pair of links and use them to
-  make a bigger group. But in the table of links there was another pair that it
-  might equally well have chosen.
+  make a bigger group, while at the same time in the table of links there was
+  another pair that it might equally well have chosen. In a sense, the
+  algorithm "decides" to go with one pair of links instead of the other.
 
 * Such an arbitrary choice may not matter in the end; for example, it may just
   mean groups get formed in a different order, but eventually the same biggest
   possible group gets formed, consisting of exactly the same chains no matter
   which link pair choices were made.
 
-* Or, quite possibly, it *may* matter, and we end up with two different biggest
-  possible groups. This seems especially likely to me for complex links, which
-  are more likely to overlap with each other.
+* Or, quite possibly, it *may* matter, and we end up with two *different*
+  biggest possible groups. This seems especially likely to me for complex
+  links, which are more likely to overlap with each other.
 
-Let us define a board position where two different biggest possible groups can
-be formed (for a given player) to be an **ambiguous group position**.
+Let us call a board position where two different biggest possible groups can be
+formed an **ambiguous group position**.
 
 Question: are there any ambiguous group positions in the corpus?

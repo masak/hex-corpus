@@ -1,0 +1,229 @@
+# for all games
+#     for all moves
+#         for either player
+#             create chains
+#             create links
+#             groupCount = search(chains, links)
+#             if groupCount > 1
+#                 it's an ambiguous position
+# 
+# performing the search
+#     if no links can be used
+#         return current groups
+#     for all pairs of links (l1, l2) between groups (x, y)
+#         groups2 = groups with xy joined
+#         links2 = reconnected, and with l1, l2 removed
+#         accumulate search(groups2, links2)
+#     return all the accumulated results
+
+my @board;
+sub print_board {
+    for @board.kv -> $i, @row {
+        print ' ' x $i;
+        for @row.kv -> $j, $cell {
+            print $cell;
+            print ' ';
+        }
+        print "\n";
+    }
+    print "\n";
+}
+
+sub neighbors($pos, $c) {
+    my $i = $pos[0];
+    my $j = $pos[1];
+
+    #    []    []
+    # []    ..     []
+    #    []    []
+    return ([$i-1, $j  ] if $i > 0             && @board[$i-1][$j]   eq $c),
+           ([$i-1, $j+1] if $i > 0  && $j < 12 && @board[$i-1][$j+1] eq $c),
+           ([$i  , $j+1] if            $j < 12 && @board[$i  ][$j+1] eq $c),
+           ([$i+1, $j  ] if $i < 12            && @board[$i+1][$j  ] eq $c),
+           ([$i+1, $j-1] if $i < 12 && $j > 0  && @board[$i+1][$j-1] eq $c),
+           ([$i  , $j-1] if            $j > 0  && @board[$i  ][$j-1] eq $c);
+}
+
+class Chain {
+    has $.name;
+    has @.cells;
+}
+
+sub for-cells(&block) {
+    for ^@board -> $i {
+        for ^@board[$i] -> $j {
+            &block($i, $j);
+        }
+    }
+}
+
+sub make_chains($c) {
+    my @chains;
+    my %seen;
+    my $name = 'a';
+
+    for-cells -> $i, $j {
+        next if @board[$i][$j] ne $c;
+        next if %seen{my $pos = [$i, $j]};
+
+        my @cells;
+        my @queue = $pos;
+        while @queue {
+            my $cell = @queue.shift;
+            next if %seen{$cell}++;
+            push @cells, $cell;
+            push @queue, neighbors($cell, $c);
+        }
+
+        push @chains, Chain.new(:$name, :@cells);
+        $name++;
+    }
+
+    return @chains;
+}
+
+sub chain-of([$i, $j], @chains) {
+    for @chains -> $chain {
+        for $chain.cells -> $pos {
+            return $chain
+                if $pos eqv [$i, $j];
+        }
+    }
+}
+
+sub print_chains($c, @chains) {
+    for @board.kv -> $i, @row {
+        print ' ' x $i;
+        for @row.kv -> $j, $cell {
+            print $cell eq '.' ?? '.' !!
+                  $cell ne $c  ?? '#' !!
+                  chain-of([$i, $j], @chains).name;
+            print ' ';
+        }
+        print "\n";
+    }
+    print "\n";
+}
+
+class Link {
+    has $.pos;
+    has $.g1;
+    has $.g2;
+}
+
+sub make_links($c, @chains) {
+    my @links;
+    my %seen;
+    for-cells -> $i, $j {
+        next if @board[$i][$j] ne '.';
+        my @neighbors = neighbors([$i, $j], $c);
+        my @groups = map { chain-of($_, @chains) }, @neighbors;
+        for @groups X @groups -> $g1, $g2 {
+            next if $g1.name ge $g2.name;
+            my $desc = "$i;$j;$g1.name();$g2.name()";
+            next if %seen{$desc}++;
+            push @links, Link.new(:pos([$i, $j]), :$g1, :$g2);
+        }
+    }
+    # XXX: also handle the (12) cases of group-link-bridge
+    # XXX: also handle the (9) cases of bridge-link-bridge
+    return @links;
+}
+
+sub print_links(@links) {
+    for @links -> $link {
+        say "{$link.pos.perl} {$link.g1.name} ~ {$link.g2.name}";
+    }
+    say "";
+}
+
+class Group {
+    has $.name;
+}
+
+class Connection {
+    has $.l1;
+    has $.l2;
+    has $.g1;
+    has $.g2;
+}
+
+sub search(@groups, @links, $indent = 0) {
+    sub connections {
+        my @connections;
+        for ^@links -> $i1 {
+            my $l1 = @links[$i1];
+            for ^$i1 -> $i2 {
+                my $l2 = @links[$i2];
+                if $l1.g1 eq $l2.g1 && $l1.g2 eq $l2.g2 {
+                    my $g1 = $l1.g1;
+                    my $g2 = $l1.g2;
+                    push @connections, Connection.new(:$l1, :$l2, :$g1, :$g2);
+                }
+            }
+        }
+        return @connections;
+    }
+
+    sub choose($c) {
+        my @newlinks = @links.grep: { $_ !=== $c.l1 && $_ !=== $c.l2 };
+        my @newgroups = @groups.grep: { $_ ne $c.g1 && $_ ne $c.g2 };
+        @newgroups.push(Group.new(:name($c.g1.name ~ $c.g2.name)));
+        return @newgroups, @newlinks;
+    }
+
+    sub sayInd(*@stuff) {
+        say '    ' x $indent, @stuff;
+    }
+
+    my @connections = connections;
+
+    if !@connections {
+        my $result = @groups.sort(*.name)>>.name.join(" ");
+        return $result;
+    }
+
+    my @result;
+    for @connections -> $connection {
+        my (@newgroups, @newlinks) := choose($connection);
+        push @result, search(@newgroups, @newlinks, $indent + 1);
+    }
+    @result.=uniq;
+    return @result;
+}
+
+for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
+    say "=== PLAYING ", ~$path;
+
+    @board = ['.' xx 13] xx 13;
+    my &swap = { die "Cannot swap before first move" };
+    for $path.IO.lines {
+        when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+            my $player = ~$0;
+            my $col = ord(~$1) - ord('a');
+            my $row = +$2 - 1;
+            @board[$row][$col] = $player eq 'White' ?? 'V' !! 'H';
+            &swap = {
+                @board[$row][$col] = '.';
+                @board[$col][$row] = 'H';
+            };
+
+            for 'V', 'H' -> $c {
+                my @chains = make_chains($c);
+                my @links = make_links($c, @chains);
+                my @result = search(@chains, @links);
+                if @result > 1 {
+                    print_chains($c, @chains);
+                    die "Ambiguous position: @result.perl()";
+                }
+            }
+        }
+        when "Black swaps." {
+            swap();
+        }
+        when /^ (White|Black) ' resigns.' $/ {
+            # Do nothing
+        }
+        die "Unknown input '$_'";
+    }
+}

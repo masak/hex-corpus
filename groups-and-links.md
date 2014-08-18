@@ -54,7 +54,8 @@ Weak connectedness is an equivalence relation, but it doesn't allow the
 formation of bigger groups. `d` and `e` are weakly connected &mdash; and if
 the semicolon were filled with a friendly piece, that piece would form a new
 chain `f`, and the new links between all the chains would allow us to form the
-group `def`.
+group `def`. (In fact, "putting a piece here would form a strong connection"
+is a good formalization of the intuitive notion of "link".)
 
 Now, here is the thing:
 

@@ -130,7 +130,8 @@ sub make_links($c, @chains) {
     return @links;
 }
 
-sub print_links(@links) {
+sub print_links(@links, &say) {
+    return unless @links;
     for @links -> $link {
         say "{$link.pos.perl} {$link.g1.name} ~ {$link.g2.name}";
     }
@@ -166,9 +167,27 @@ sub search(@groups, @links, $indent = 0) {
     }
 
     sub choose($c) {
-        my @newlinks = @links.grep: { $_ !=== $c.l1 && $_ !=== $c.l2 };
-        my @newgroups = @groups.grep: { $_ ne $c.g1 && $_ ne $c.g2 };
-        @newgroups.push(Group.new(:name($c.g1.name ~ $c.g2.name)));
+        sayInd "Combining $c.g1.name() and $c.g2.name()";
+        my @newgroups = @groups.grep: { $_ !=== $c.g1 && $_ !=== $c.g2 };
+        my $name = ($c.g1.name ~ $c.g2.name).comb.sort.join;
+        my $g12 = Group.new(:$name);
+        @newgroups.push($g12);
+
+        my @newlinks;
+        for @links {
+            next if $_ === $c.l1;
+            next if $_ === $c.l2;
+            next if .g1 === $c.g1 && .g2 === $c.g2;
+            if .g1 === $c.g1 || .g1 === $c.g2 {
+                push @newlinks, Link.new(:pos(.pos), :g1($g12), :g2(.g2));
+            }
+            elsif .g2 === $c.g1 || .g2 === $c.g2 {
+                push @newlinks, Link.new(:pos(.pos), :g1(.g1), :g2($g12));
+            }
+            else {
+                push @newlinks, $_;
+            }
+        }
         return @newgroups, @newlinks;
     }
 
@@ -176,10 +195,12 @@ sub search(@groups, @links, $indent = 0) {
         say '    ' x $indent, @stuff;
     }
 
+    print_links(@links, &sayInd);
     my @connections = connections;
 
     if !@connections {
         my $result = @groups.sort(*.name)>>.name.join(" ");
+        sayInd "==> $result";
         return $result;
     }
 
@@ -192,7 +213,8 @@ sub search(@groups, @links, $indent = 0) {
     return @result;
 }
 
-for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
+#for (dir("mvm"), dir("hvm"), dir("hvh")).pick(*) -> $path {
+for 'hvh/1401972'.IO -> $path {
     say "=== PLAYING ", ~$path;
 
     @board = ['.' xx 13] xx 13;
@@ -222,6 +244,9 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
             swap();
         }
         when /^ (White|Black) ' resigns.' $/ {
+            # Do nothing
+        }
+        when /^ (White|Black) ' times out.' $/ {
             # Do nothing
         }
         die "Unknown input '$_'";

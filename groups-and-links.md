@@ -77,3 +77,31 @@ Let us call a board position where two different biggest possible groups can be
 formed an **ambiguous group position**.
 
 Question: are there any ambiguous group positions in the corpus?
+
+**Update**: Yes. A script I wrote found the following position in
+`hvh/1401972`:
+
+     # # # c .
+    # e e . .
+     # . . f .
+
+Where we clearly have either `cf` or `ef` but not both.
+
+This answer, obvious in retrospect as it is, leads on to further
+investigations and questions.
+
+* First, currently the script finds the position but flags it for the wrong
+  reasons. See [the commit where this was
+  explained](https://github.com/masak/hex-corpus/commit/e9301871e755f63554e195d7060bb49a6cb6949f).
+  Need to look into that.
+
+* Second, though this *is* an ambiguous position, it's not a very interesting
+  one. Why? Because the `e` group is all but surrounded by the opponent, and
+  doesn't confer any strategic advantage. The `c` group could turn out useful,
+  though. The choice between the two groupings isn't that hard in this case. So
+  what we're *really* looking for is *interesting* ambiguous group positions,
+  ones where the choice isn't trivial. In order to do that, we also need a way
+  to mark chains/groups as useful or useless.
+
+Some progress. I like how getting some of the answers immediately leads to more
+precise questions.

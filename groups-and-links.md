@@ -96,9 +96,9 @@ investigations and questions.
   Need to look into that.
 
 * Second, though this *is* an ambiguous position, it's not a very interesting
-  one. Why? Because the `e` group is all but surrounded by the opponent, and
-  doesn't confer any strategic advantage. The `c` group could turn out useful,
-  though. The choice between the two groupings isn't that hard in this case. So
+  one. Why? Because the `e` chain is all but surrounded by the opponent, and
+  doesn't confer any strategic advantage. The `c` chain could turn out useful,
+  though. The choice between the two groupings is easy in this case. So
   what we're *really* looking for is *interesting* ambiguous group positions,
   ones where the choice isn't trivial. In order to do that, we also need a way
   to mark chains/groups as useful or useless.

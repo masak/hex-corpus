@@ -1,0 +1,70 @@
+# The input coordinate system looks like this:
+#
+#                 (-3,+2) (-2,+2) (-1,+2) ( 0,+2) (+1,+2) (+2,+2) (+3,+2)
+#
+#             (-3,+1) (-2,+1) (-1,+1) ( 0,+1) (+1,+1) (+2,+1) (+3,+1)
+#
+#         (-3, 0) (-2, 0) (-1, 0) ( 0, 0) (+1, 0) (+2, 0) (+3, 0)
+#
+#     (-3,-1) (-2,-1) (-1,-1) ( 0,-1) (+1,-1) (+2,-1) (+3,-1)
+#
+# (-3,-2) (-2,-2) (-1,-2) ( 0,-2) (+1,-2) (+2,-2) (+3,-2)
+#
+# That is, with the `x` axis pointing the way it normally does, but the `y`
+# pointing 60 degrees counter-clockwise from it.
+#
+# The output range looks like this:
+#
+#                                          . . . . . . . . . .
+#                                         . . . . . . . . . .
+#                                        . . . . . . . . . .
+#                                       * * * * * * * * * * ...
+#                                      * * * * * * * * * * * ...
+#                                     * * * * * * * * * * * * ...
+#                                  * * * * * * * * * * * * * ...
+#
+# That is, we've kept an infinite triangular slice of the place that happens
+# to cover a sixth of it. (And the origin.)
+#
+# Any input coordinates that fall inside of this slice are returned as-is.
+# Any that fall outside are rotated, 60 degrees at a time, until they fall
+# inside.
+#
+# If you're curious where the rotation formula comes from, it's enough to
+# verify for each of the six coordinate pair that plugging those coordinates
+# into the formula gives the next one in the sequence.
+#
+#                                     (-1,+1) ( 0,+1)
+#                                 (-1, 0)         (+1, 0)
+#                                     ( 0, -1) (+1,-1)
+#
+# (Though that's not how I arrived at it. I just added more test cases until
+# it stopped being wrong.)
+
+sub normalize($x is copy, $y is copy) {
+    return [0, 0]
+        if $x & $y == 0;
+    until $x > 0 && $y >= 0 {
+        ($x, $y) = $x + $y, -$x;
+    }
+    return [$x, $y];
+}
+
+use Test;
+
+my @tests = «
+     0  0   0 0     "origin"
+     1  0   1 0     "one step along major axis"
+     1  1   1 1     "one step along major axis and one along minor"
+     0  1   1 0     "second sextant"
+     0  2   2 0     "two steps into second sextant"
+    -1  2   1 1     "one major step, one minor step in second sextant"
+    -1  0   1 0     "third sextant"
+     5 -3   3 2     "just trying a random one from the sixth sextant"
+»;
+
+for @tests -> $x, $y, $ox, $oy, $description {
+    is normalize($x, $y), [$ox, $oy], $description;
+}
+
+done;

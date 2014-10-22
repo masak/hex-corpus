@@ -1,0 +1,276 @@
+class Game { ... }
+
+class Move {
+    has Game $.game;
+}
+
+class Placement is Move {
+    has Str $.color;
+    has Int $.row;
+    has Int $.col;
+}
+
+class Swap is Move {}
+class Resignation is Move {}
+class Timeout is Move {}
+
+class Game {
+    has Str $.filename;
+    has Move @.moves;
+
+    method addMove($move) {
+        @.moves.push($move);
+    }
+}
+
+class HexDB {
+    has Set $.games;
+
+    multi method addMove(Game $game, Move:U $movetype) {
+        $!games ∪= $game;
+        $game.addMove($movetype.new(:$game));
+    }
+
+    multi method addMove(Game $game, Int $row, Int $col) {
+        $!games ∪= $game;
+        my $color = $game.moves %% 2 ?? 'White' !! 'Black';
+        my $placement = Placement.new(:$game, :$color, :$row, :$col);
+        $game.addMove($placement);
+    }
+
+    method moves {
+        @.games».moves.flat;
+    }
+}
+
+enum PieceState <empty friendly>;
+
+sub matches(&criteria) {
+    # XXX: should mirror-flip matches too
+    # XXX: should not mirror-flip mirror-symmetric things
+    my &*MATCH_MOVE = sub ($m, $steps) { True };
+    &criteria();
+    my &match-move = &*MATCH_MOVE;
+
+    return Any.new but role {
+        method ACCEPTS(Move $m) {
+            return False
+                unless $m ~~ Placement;
+            for ^6 -> $steps {
+                return True
+                    if match-move($m, $steps);
+            }
+            return False;
+        }
+    };
+}
+
+sub rotate([$x is copy, $y is copy], $steps) {
+    ($x, $y) = $x + $y, -$x
+        for ^$steps;
+    return $x, $y;
+}
+
+constant SIZE = 13;
+
+sub inside { $^coord ~~ ^SIZE }
+sub outside { !inside $^coord }
+
+sub at([$x, $y], PieceState:D $ps) {
+    my &old-match = &*MATCH_MOVE;
+    &*MATCH_MOVE = sub ($m, $steps) {
+        return False
+            unless &old-match($m, $steps);
+
+        my ($rot-x, $rot-y) = rotate([$x, $y], $steps);
+        my $r = $m.row - $rot-y;
+        my $c = $m.col + $rot-x + $rot-y;
+        # XXX: board should be cached in game
+        my @board = ['empty' xx SIZE] xx SIZE;
+        for $m.game.moves.kv -> $i, $move {
+            last if $move ~~ Resignation;
+            last if $move ~~ Timeout;
+            if $move ~~ Swap {
+                my $firstmove = $m.game.moves[0];
+                @board[$firstmove.row][$firstmove.col] = 'empty';
+                @board[$firstmove.col][$firstmove.row] = 'Black';
+                next;
+            }
+            my $color = $i %% 2 ?? 'White' !! 'Black';
+            @board[$move.row][$move.col] = $color;
+            last if $move === $m;
+        }
+        my $friend-color = $m.color;
+        my $expected = do given $ps {
+            when empty { 'empty' }
+            when friendly { $friend-color }
+        };
+        my $actual =
+            outside($r) && inside($c) ?? 'White' !!
+            inside($r) && outside($c) ?? 'Black' !!
+            outside($r) && outside($c) ?? 'empty' !!
+            @board[$r][$c];
+        return True
+            if $actual eq $expected;
+
+        return False;
+    };
+}
+
+use Test;
+
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 2, 1);
+
+    my @matches = $db.moves.grep(matches {;});
+
+    is +@matches, 1, "one move found, because we're matching on everything";
+}
+
+#    . . b .
+#     . . . A      A = <3, 5>
+#      . C . .     C = <4, 3>
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 3, 5);
+    $db.addMove($game, 2, 4);
+    $db.addMove($game, 4, 3);
+
+    my @matches = $db.moves.grep(matches {
+        at [1, 1], friendly;
+    });
+
+    is +@matches, 1, "there are three moves, but only C matches the criterion";
+}
+
+#    . . b .
+#     . . . A      A = <3, 5>
+#      . C . .     C = <4, 3>
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 3, 5);
+    $db.addMove($game, 2, 4);
+    $db.addMove($game, 4, 3);
+
+    my @matches = $db.moves.grep(matches {
+        at [1, 1], friendly;
+        at [1, 0], friendly;
+    });
+
+    is +@matches, 0, "this search matches no moves";
+}
+
+#    . . b .
+#     . . . A      A = <3, 5>
+#      . C . .     C = <4, 3>
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 3, 5);
+    $db.addMove($game, 2, 4);
+    $db.addMove($game, 4, 3);
+
+    my @matches = $db.moves.grep(matches {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+    });
+
+    is +@matches, 1, "this one, however, does match; asserting an empty cell";
+}
+
+#    . d b .       b = <0, 2>  d = <0, 1>
+#     . . . A
+#      . C . .
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 1, 3);
+    $db.addMove($game, 0, 2);
+    $db.addMove($game, 2, 1);
+    $db.addMove($game, 0, 1);
+
+    my @matches = $db.moves.grep(matches {
+        at [1, 0], friendly;
+    });
+
+    is +@matches, 1, "a friendly cell can be black";
+}
+
+#    . . C .       C = <2, 4>
+#     . . . b
+#      . A . .     C = <4, 3>
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 4, 3);
+    $db.addMove($game, 3, 5);
+    $db.addMove($game, 2, 4);
+
+    my @matches = $db.moves.grep(matches {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+        at [0, 1], empty;
+    });
+
+    is +@matches, 1, "the pattern matches even when rotated";
+}
+
+#    . . . .
+#     . . A .      A = <1, 2>
+#      . . . .
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 1, 2);
+
+    my @matches = $db.moves.grep(matches {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+        at [0, 1], empty;
+    });
+
+    is +@matches, 1, "a stone can match past an edge";
+}
+
+#    . . A .
+#     . b . .      b = <1, 1>
+#      . . . .
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 0, 2);
+    $db.addMove($game, 1, 1);
+
+    my @matches = $db.moves.grep(matches {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+        at [0, 1], empty;
+    });
+
+    is +@matches, 1, "stones match only their own edge";
+}
+
+#    . . A .    (swapped out)
+#     . . . C
+#      b d . .
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 3, 2);
+    $db.addMove($game, Swap);   # so there's now a Black stone at (2, 3)
+    $db.addMove($game, 4, 3);
+
+    my @bridges = $db.moves.grep(matches {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+        at [0, 1], empty;
+    });
+
+    is +@bridges, 0, "no bridge because that stone was swapped away";
+}
+
+done;

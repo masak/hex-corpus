@@ -43,48 +43,12 @@ class HexDB {
     }
 }
 
+constant SIZE = 13;
+
 enum PieceState <empty friendly>;
 
 sub matches(&criteria) {
-    # XXX: should mirror-flip matches too
-    # XXX: should not mirror-flip mirror-symmetric things
-    my &*MATCH_MOVE = sub ($m, $steps) { True };
-    &criteria();
-    my &match-move = &*MATCH_MOVE;
-
-    return Any.new but role {
-        method ACCEPTS(Move $m) {
-            return False
-                unless $m ~~ Placement;
-            for ^6 -> $steps {
-                return True
-                    if match-move($m, $steps);
-            }
-            return False;
-        }
-    };
-}
-
-sub rotate([$x is copy, $y is copy], $steps) {
-    ($x, $y) = $x + $y, -$x
-        for ^$steps;
-    return $x, $y;
-}
-
-constant SIZE = 13;
-
-sub inside { $^coord ~~ ^SIZE }
-sub outside { !inside $^coord }
-
-sub at([$x, $y], PieceState:D $ps) {
-    my &old-match = &*MATCH_MOVE;
-    &*MATCH_MOVE = sub ($m, $steps) {
-        return False
-            unless &old-match($m, $steps);
-
-        my ($rot-x, $rot-y) = rotate([$x, $y], $steps);
-        my $r = $m.row - $rot-y;
-        my $c = $m.col + $rot-x + $rot-y;
+    sub match-move($m, $steps, @criteria) {
         # XXX: board should be cached in game
         my @board = ['empty' xx SIZE] xx SIZE;
         for $m.game.moves.kv -> $i, $move {
@@ -101,20 +65,58 @@ sub at([$x, $y], PieceState:D $ps) {
             last if $move === $m;
         }
         my $friend-color = $m.color;
-        my $expected = do given $ps {
-            when empty { 'empty' }
-            when friendly { $friend-color }
-        };
-        my $actual =
-            outside($r) && inside($c) ?? 'White' !!
-            inside($r) && outside($c) ?? 'Black' !!
-            outside($r) && outside($c) ?? 'empty' !!
-            @board[$r][$c];
-        return True
-            if $actual eq $expected;
+        for @criteria -> [Int $x, Int $y, PieceState $ps] {
+            my ($rot-x, $rot-y) = rotate([$x, $y], $steps);
+            my $r = $m.row - $rot-y;
+            my $c = $m.col + $rot-x + $rot-y;
+            my $actual =
+                outside($r) && inside($c) ?? 'White' !!
+                inside($r) && outside($c) ?? 'Black' !!
+                outside($r) && outside($c) ?? 'empty' !!
+                @board[$r][$c];
+            my $expected = do given $ps {
+                when empty { 'empty' }
+                when friendly { $friend-color }
+            };
+            return False
+                unless $actual eq $expected;
+        }
 
-        return False;
+        return True;
+    }
+
+    # XXX: should mirror-flip matches too
+    # XXX: should not mirror-flip mirror-symmetric things
+    my @criteria = do {
+        my @*CRITERIA;
+        &criteria();
+        @*CRITERIA;
     };
+
+    return Any.new but role {
+        method ACCEPTS(Move $m) {
+            return False
+                unless $m ~~ Placement;
+            for ^6 -> $steps {
+                return True
+                    if match-move($m, $steps, @criteria);
+            }
+            return False;
+        }
+    };
+}
+
+sub rotate([$x is copy, $y is copy], $steps) {
+    ($x, $y) = $x + $y, -$x
+        for ^$steps;
+    return $x, $y;
+}
+
+sub inside { $^coord ~~ ^SIZE }
+sub outside { !inside $^coord }
+
+sub at([$x, $y], PieceState:D $ps) {
+    push @*CRITERIA, [$x, $y, $ps];
 }
 
 use Test;

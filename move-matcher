@@ -149,7 +149,7 @@ use Test;
 }
 
 #    . . b .
-#     . . . A      A = <3, 5>
+#     . . ? A      A = <3, 5>
 #      . C . .     C = <4, 3>
 {
     my $db = HexDB.new;

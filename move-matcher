@@ -47,7 +47,7 @@ constant SIZE = 13;
 
 enum PieceState <empty friendly>;
 
-sub matches(&criteria) {
+sub matcher(&criteria) {
     sub match-move($m, $steps, @criteria) {
         # XXX: board should be cached in game
         my @board = ['empty' xx SIZE] xx SIZE;
@@ -126,7 +126,7 @@ use Test;
     my $game = Game.new(:filename<testgame>);
     $db.addMove($game, 2, 1);
 
-    my @matches = $db.moves.grep(matches {;});
+    my @matches = $db.moves.grep(matcher {;});
 
     is +@matches, 1, "one move found, because we're matching on everything";
 }
@@ -141,7 +141,7 @@ use Test;
     $db.addMove($game, 2, 4);
     $db.addMove($game, 4, 3);
 
-    my @matches = $db.moves.grep(matches {
+    my @matches = $db.moves.grep(matcher {
         at [1, 1], friendly;
     });
 
@@ -158,7 +158,7 @@ use Test;
     $db.addMove($game, 2, 4);
     $db.addMove($game, 4, 3);
 
-    my @matches = $db.moves.grep(matches {
+    my @matches = $db.moves.grep(matcher {
         at [1, 1], friendly;
         at [1, 0], friendly;
     });
@@ -176,7 +176,7 @@ use Test;
     $db.addMove($game, 2, 4);
     $db.addMove($game, 4, 3);
 
-    my @matches = $db.moves.grep(matches {
+    my @matches = $db.moves.grep(matcher {
         at [1, 1], friendly;
         at [1, 0], empty;
     });
@@ -195,7 +195,7 @@ use Test;
     $db.addMove($game, 2, 1);
     $db.addMove($game, 0, 1);
 
-    my @matches = $db.moves.grep(matches {
+    my @matches = $db.moves.grep(matcher {
         at [1, 0], friendly;
     });
 
@@ -212,7 +212,7 @@ use Test;
     $db.addMove($game, 3, 5);
     $db.addMove($game, 2, 4);
 
-    my @matches = $db.moves.grep(matches {
+    my @matches = $db.moves.grep(matcher {
         at [1, 1], friendly;
         at [1, 0], empty;
         at [0, 1], empty;
@@ -229,7 +229,7 @@ use Test;
     my $game = Game.new(:filename<testgame>);
     $db.addMove($game, 1, 2);
 
-    my @matches = $db.moves.grep(matches {
+    my @matches = $db.moves.grep(matcher {
         at [1, 1], friendly;
         at [1, 0], empty;
         at [0, 1], empty;
@@ -247,7 +247,7 @@ use Test;
     $db.addMove($game, 0, 2);
     $db.addMove($game, 1, 1);
 
-    my @matches = $db.moves.grep(matches {
+    my @matches = $db.moves.grep(matcher {
         at [1, 1], friendly;
         at [1, 0], empty;
         at [0, 1], empty;
@@ -266,7 +266,7 @@ use Test;
     $db.addMove($game, Swap);   # so there's now a Black stone at (2, 3)
     $db.addMove($game, 4, 3);
 
-    my @bridges = $db.moves.grep(matches {
+    my @bridges = $db.moves.grep(matcher {
         at [1, 1], friendly;
         at [1, 0], empty;
         at [0, 1], empty;

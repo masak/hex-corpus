@@ -1,7 +1,15 @@
+class Swap { ... }
+class Resignation { ... }
+class Timeout { ... }
 class Game { ... }
 
 class Move {
+    has Int $.n;
     has Game $.game;
+
+    method cell($r, $c) {
+        $.game.cell($.n, $r, $c);
+    }
 }
 
 class Placement is Move {
@@ -14,12 +22,52 @@ class Swap is Move {}
 class Resignation is Move {}
 class Timeout is Move {}
 
+constant SIZE = 13;
+
+sub inside { $^coord ~~ ^SIZE }
+sub outside { !inside $^coord }
+
 class Game {
     has Str $.filename;
     has Move @.moves;
+    has @!board = ['empty' xx SIZE] xx SIZE;
+    has $!swapped = False;
 
     method addMove($move) {
         @.moves.push($move);
+        if $move ~~ Placement {
+            @!board[$move.row][$move.col] = $move;
+        }
+        if $move ~~ Swap {
+            $!swapped = True;
+            my $firstmove = @.moves[0];
+            @!board[$firstmove.row][$firstmove.col] = 'empty';
+            my $row = $firstmove.col;
+            my $col = $firstmove.row;
+            @!board[$row][$col] = Placement.new(:n(1), :game(self), :$row, :$col);
+        }
+    }
+
+    method cell($n, $r, $c) {
+        return 'White'
+            if outside($r) && inside($c);
+        return 'Black'
+            if inside($r) && outside($c);
+        return 'empty'
+            if outside($r) && outside($c);
+
+        my $placement = @!board[$r][$c];
+        return 'empty'
+            if $placement eq 'empty';
+        return 'empty'
+            if $n > $placement.n;
+        if $n == 0 && $!swapped {
+            my $firstmove = @.moves[0];
+            return $r == $firstmove.row && $c == $firstmove.col
+                ?? $firstmove.color
+                !! 'empty';
+        }
+        return $placement.color;
     }
 }
 
@@ -28,13 +76,15 @@ class HexDB {
 
     multi method addMove(Game $game, Move:U $movetype) {
         $!games ∪= $game;
-        $game.addMove($movetype.new(:$game));
+        my $n = +$game.moves;
+        $game.addMove($movetype.new(:$n, :$game));
     }
 
     multi method addMove(Game $game, Int $row, Int $col) {
         $!games ∪= $game;
+        my $n = +$game.moves;
         my $color = $game.moves %% 2 ?? 'White' !! 'Black';
-        my $placement = Placement.new(:$game, :$color, :$row, :$col);
+        my $placement = Placement.new(:$n, :$game, :$color, :$row, :$col);
         $game.addMove($placement);
     }
 
@@ -43,38 +93,17 @@ class HexDB {
     }
 }
 
-constant SIZE = 13;
-
 enum PieceState <empty friendly hostile>;
 
 sub matcher(&criteria) {
     sub match-move($m, $steps, @criteria) {
-        # XXX: board should be cached in game
-        my @board = ['empty' xx SIZE] xx SIZE;
-        for $m.game.moves.kv -> $i, $move {
-            last if $move ~~ Resignation;
-            last if $move ~~ Timeout;
-            if $move ~~ Swap {
-                my $firstmove = $m.game.moves[0];
-                @board[$firstmove.row][$firstmove.col] = 'empty';
-                @board[$firstmove.col][$firstmove.row] = 'Black';
-                next;
-            }
-            my $color = $i %% 2 ?? 'White' !! 'Black';
-            @board[$move.row][$move.col] = $color;
-            last if $move === $m;
-        }
         my $friend-color = $m.color;
         my $hostile-color = $friend-color eq 'White' ?? 'Black' !! 'White';
         for @criteria -> [Int $x, Int $y, PieceState $ps] {
             my ($rot-x, $rot-y) = rotate([$x, $y], $steps);
             my $r = $m.row - $rot-y;
             my $c = $m.col + $rot-x + $rot-y;
-            my $actual =
-                outside($r) && inside($c) ?? 'White' !!
-                inside($r) && outside($c) ?? 'Black' !!
-                outside($r) && outside($c) ?? 'empty' !!
-                @board[$r][$c];
+            my $actual = $m.cell($r, $c);
             my $expected = do given $ps {
                 when empty { 'empty' }
                 when friendly { $friend-color }
@@ -141,9 +170,6 @@ sub rotate([$x is copy, $y is copy], $steps) {
         for ^$steps;
     return $x, $y;
 }
-
-sub inside { $^coord ~~ ^SIZE }
-sub outside { !inside $^coord }
 
 sub at([$x, $y], PieceState:D $ps) {
     push @*CRITERIA, [$x, $y, $ps];

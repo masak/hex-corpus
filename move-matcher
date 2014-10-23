@@ -87,7 +87,6 @@ sub matcher(&criteria) {
         return True;
     }
 
-    # XXX: should not mirror-flip mirror-symmetric things
     my @criteria = do {
         my @*CRITERIA;
         &criteria();
@@ -125,10 +124,12 @@ sub matcher(&criteria) {
                 return True
                     if match-move($m, $steps, @criteria);
             }
-            my @flip-criteria = @criteria.map(-> [$x, $y, $ps] { [$y, $x, $ps] });
-            for ^6 -> $steps {
-                return True
-                    if match-move($m, $steps, @flip-criteria);
+            if !$.symmetric {
+                my @flip-criteria = @criteria.map(-> [$x, $y, $ps] { [$y, $x, $ps] });
+                for ^6 -> $steps {
+                    return True
+                        if match-move($m, $steps, @flip-criteria);
+                }
             }
             return False;
         }

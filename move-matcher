@@ -87,7 +87,6 @@ sub matcher(&criteria) {
         return True;
     }
 
-    # XXX: should mirror-flip matches too
     # XXX: should not mirror-flip mirror-symmetric things
     my @criteria = do {
         my @*CRITERIA;
@@ -125,6 +124,11 @@ sub matcher(&criteria) {
             for ^6 -> $steps {
                 return True
                     if match-move($m, $steps, @criteria);
+            }
+            my @flip-criteria = @criteria.map(-> [$x, $y, $ps] { [$y, $x, $ps] });
+            for ^6 -> $steps {
+                return True
+                    if match-move($m, $steps, @flip-criteria);
             }
             return False;
         }
@@ -371,6 +375,24 @@ use Test;
     });
 
     is +@matches, 1, "knows how to match hostile pieces";
+}
+
+#    . . b .       b = <2, 4>
+#     . . . A      A = <3, 5>
+#      . C . .     C = <4, 3>
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 3, 5);
+    $db.addMove($game, 2, 4);
+    $db.addMove($game, 4, 3);
+
+    my @matches = $db.moves.grep(matcher {
+        at [1, 1], friendly;
+        at [2, -1], hostile;
+    });
+
+    is +@matches, 1, "can match against mirror images";
 }
 
 done;

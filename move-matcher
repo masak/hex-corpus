@@ -94,6 +94,29 @@ sub matcher(&criteria) {
     };
 
     return Any.new but role {
+        method symmetric {
+            my @fs =
+                { $^x + $^y, -$y },     # (1, 0)
+                { $^y, $^x },           # (1, 1)
+                { -$^x, $x + $^y },     # (0, 1)
+                { -$^y - $^x, $y },     # (-1, 2)
+                { $^x, -$^y - 2 * $x }, # (-1, 1)
+                { $^x, -$x - $^y },     # (-2, 1)
+            ;
+
+            my %h = @criteria.map(-> [$x, $y, $ps] { "<$x $y> $ps" => 1 });
+            FLIP:
+            for @fs -> &f {
+                for @criteria -> [Int $x, Int $y, PieceState $ps] {
+                    my ($fx, $fy) = f($x, $y);
+                    next FLIP
+                        unless %h{"<$fx $fy> $ps"} :exists;
+                }
+                return True;
+            }
+            return False;
+        }
+
         method ACCEPTS(Move $m) {
             return False
                 unless $m ~~ Placement;
@@ -273,6 +296,61 @@ use Test;
     });
 
     is +@bridges, 0, "no bridge because that stone was swapped away";
+}
+
+{
+    my $matcher = matcher {
+        at [1, 1], friendly;
+    };
+    ok $matcher.symmetric, "matcher is mirror-symmetric";
+}
+
+{
+    my $matcher = matcher {
+        at [1, 1], friendly;
+        at [2, 0], friendly;
+    };
+    ok !$matcher.symmetric, "matcher is not mirror-symmetric";
+}
+
+{
+    my $matcher = matcher {
+        at [0, 1], friendly;
+        at [1, -1], friendly;
+    };
+    ok $matcher.symmetric, "matcher is mirror-symmetric, but along a different line";
+}
+
+{
+    my $matcher = matcher {
+        at [1, 0], friendly;
+        at [-1, 1], friendly;
+    };
+    ok $matcher.symmetric, "a third symmetry line";
+}
+
+{
+    my $matcher = matcher {
+        at [-1, 2], friendly;
+        at [-1, 0], friendly;
+    };
+    ok $matcher.symmetric, "a fourth symmetry line";
+}
+
+{
+    my $matcher = matcher {
+        at [-1, 1], friendly;
+        at [0, 1], friendly;
+    };
+    ok $matcher.symmetric, "a fifth symmetry line";
+}
+
+{
+    my $matcher = matcher {
+        at [-1, 2], friendly;
+        at [-1, -1], friendly;
+    };
+    ok $matcher.symmetric, "a sixth symmetry line";
 }
 
 done;

@@ -12,6 +12,14 @@ class Move {
     method cell($r, $c) {
         $.game.cell($.n, $r, $c);
     }
+
+    method gist {
+        "[move $.n in game $.game.filename()]";
+    }
+
+    method board {
+        $.game.board($.n);
+    }
 }
 
 class Placement is Move {
@@ -70,6 +78,24 @@ class Game {
                 given @.moves[0];
         }
         return $placement.color;
+    }
+
+    method board($n) {
+        join "\n", (^SIZE).map: -> $r {
+            "  " x $r ~
+            join "", (^SIZE).map: -> $c {
+                sub currentmove() {
+                    .row == $r && .col == $c given @.moves[$n];
+                }
+                my $cell = self.cell($n, $r, $c);
+                my $contents = $cell eq 'White' ?? 'wh' !!
+                               $cell eq 'Black' ?? 'bl' !!
+                               '..';
+                my ($left, $right) = currentmove() ??
+                    ('[', ']') !! (' ', ' ');
+                "$left$contents$right";
+            }
+        };
     }
 }
 

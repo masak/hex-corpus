@@ -32,7 +32,7 @@ sub outside { !inside $^coord }
 class Game {
     has Str $.filename;
     has Move @.moves;
-    has @!board = ['empty' xx SIZE] xx SIZE;
+    has @!board = [Any xx SIZE] xx SIZE;
     has $!swapped = False;
 
     method addMove($move) {
@@ -43,10 +43,10 @@ class Game {
         if $move ~~ Swap {
             $!swapped = True;
             my $firstmove = @.moves[0];
-            @!board[$firstmove.row][$firstmove.col] = 'empty';
+            @!board[$firstmove.row][$firstmove.col] = Any;
             my $row = $firstmove.col;
             my $col = $firstmove.row;
-            @!board[$row][$col] = Placement.new(:n(1), :game(self), :$row, :$col);
+            @!board[$row][$col] = Placement.new(:n(1), :game(self), :$row, :$col, :color<Black>);
         }
     }
 
@@ -60,14 +60,14 @@ class Game {
 
         my $placement = @!board[$r][$c];
         return 'empty'
-            if $placement eq 'empty';
+            unless $placement;
         return 'empty'
-            if $n > $placement.n;
+            if $n < $placement.n;
         if $n == 0 && $!swapped {
-            my $firstmove = @.moves[0];
-            return $r == $firstmove.row && $c == $firstmove.col
-                ?? $firstmove.color
-                !! 'empty';
+            return $r == .row && $c == .col
+                ?? .color
+                !! 'empty'
+                given @.moves[0];
         }
         return $placement.color;
     }

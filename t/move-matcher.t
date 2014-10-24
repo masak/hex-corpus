@@ -246,6 +246,24 @@ use Test;
     is +@matches, 1, "can match against mirror images";
 }
 
-# XXX make sure a swap move counts as a kind of placement
+#    . . . .
+#     . . A .
+#      . b . .
+#       . . . .
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 1, 2);
+    $db.addMove($game, Swap);
+
+    my @bridges = $db.moves.grep(matcher {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+        at [0, 1], empty;
+    });
+
+    is +@bridges, 2, "swap moves can match as placements";
+}
+
 
 done;

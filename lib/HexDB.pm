@@ -52,10 +52,16 @@ class Game {
             $!swapped = True;
             my $firstmove = @.moves[0];
             @!board[$firstmove.row][$firstmove.col] = Any;
-            my $row = $firstmove.col;
-            my $col = $firstmove.row;
-            @!board[$row][$col] = Placement.new(:n(1), :game(self), :$row, :$col, :color<Black>);
+            @!board[$firstmove.col][$firstmove.row] = $.swap-placement;
         }
+    }
+
+    method swap-placement {
+        my $game = self;
+        my $firstmove = @.moves[0];
+        my $row = $firstmove.col;
+        my $col = $firstmove.row;
+        return Placement.new(:n(1), :$game, :$row, :$col, :color<Black>);
     }
 
     method cell($n, $r, $c) {
@@ -203,9 +209,12 @@ sub matcher(&criteria) is export {
             return False;
         }
 
-        method ACCEPTS(Move $m) {
+        method ACCEPTS(Move $m is copy) {
             return False
-                unless $m ~~ Placement;
+                unless $m ~~ Placement | Swap;
+            if $m ~~ Swap {
+                $m = $m.game.swap-placement;
+            }
             for ^6 -> $steps {
                 return True
                     if match-move($m, $steps, @criteria);

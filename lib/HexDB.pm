@@ -256,14 +256,29 @@ sub at([$x, $y], PieceState:D $ps) is export {
 class View {
     has Move $.move;
     has Int $.steps;
-    has Bool $.flipped;
+    has Bool $.flipped = False;
+    has Matcher $.matcher;
+
+    method edgy {
+        my $move =
+            $.move ~~ Placement ?? $.move !!
+            $.move ~~ Swap      ?? $.move.game.swap-placement !!
+            die "Don't know how to handle a ", $.move.WHAT;
+        for $.matcher.criteria.list -> $c {
+            my ($x, $y) = rotate([$c[0], $c[1]], $.steps);
+            my ($row, $col) = $move.row - $y, $move.col + $x + $y;
+            return True
+                if outside($row) || outside($col);
+        }
+        return False;
+    }
 }
 
 sub views(@moves, Matcher $matcher) is export {
     gather for @moves -> $move {
         for ^6 -> $steps {
             if $matcher.matches($move, $steps) {
-                take View.new(:$move, :$steps);
+                take View.new(:$move, :$steps, :$matcher);
             }
         }
         if !$matcher.symmetric {
@@ -272,7 +287,7 @@ sub views(@moves, Matcher $matcher) is export {
             ));
             for ^6 -> $steps {
                 if $flip-matcher.matches($move, $steps) {
-                    take View.new(:$move, :$steps, :flipped);
+                    take View.new(:$move, :$steps, :flipped, :$matcher);
                 }
             }
         }

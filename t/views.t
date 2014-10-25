@@ -55,4 +55,50 @@ use Test;
     is +@views, 4, "thanks to reflecting the matcher through an axis, we get 4 views, not 2";
 }
 
+#    . . . .
+#     . . A .
+#      . . . .
+#       . . . .
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 1, 2);
+
+    my $BRIDGE = matcher {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+        at [0, 1], empty;
+    };
+
+    my @matches = $db.moves.grep($BRIDGE);
+    my @views = views(@matches, $BRIDGE);
+
+    is +@views.grep(*.edgy), 1, "this view matches against an edge";
+}
+
+#    . . . .
+#     . . . . o .
+#      . . A . . o
+#       . . . B . .
+#          o . . o
+#           . o .
+{
+    my $db = HexDB.new;
+    my $game = Game.new(:filename<testgame>);
+    $db.addMove($game, 2, 2);
+    $db.addMove($game, 12, 12);
+    $db.addMove($game, 3, 3);
+
+    my $BRIDGE = matcher {
+        at [1, 1], friendly;
+        at [1, 0], empty;
+        at [0, 1], empty;
+    };
+
+    my @matches = $db.moves.grep($BRIDGE);
+    my @views = views(@matches, $BRIDGE);
+
+    is +@views.grep(*.edgy), 0, "this view doesn't match against an edge";
+}
+
 done;

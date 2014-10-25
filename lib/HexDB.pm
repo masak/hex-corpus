@@ -167,7 +167,12 @@ enum PieceState <empty friendly hostile>;
 class Matcher {
     has @.criteria;
 
-    method matches($m, $steps) {
+    method matches($m is copy, $steps) {
+        return False
+            unless $m ~~ Placement | Swap;
+        if $m ~~ Swap {
+            $m = $m.game.swap-placement;
+        }
         my $friend-color = $m.color;
         my $hostile-color = $friend-color eq 'White' ?? 'Black' !! 'White';
         for @.criteria -> [Int $x, Int $y, PieceState $ps] {
@@ -210,12 +215,7 @@ class Matcher {
         return False;
     }
 
-    method ACCEPTS(Move $m is copy) {
-        return False
-            unless $m ~~ Placement | Swap;
-        if $m ~~ Swap {
-            $m = $m.game.swap-placement;
-        }
+    method ACCEPTS(Move $m) {
         for ^6 -> $steps {
             return True
                 if self.matches($m, $steps);

@@ -164,11 +164,13 @@ class HexDB {
 
 enum PieceState <empty friendly hostile>;
 
-sub matcher(&criteria) is export {
-    sub match-move($m, $steps, @criteria) {
+class Matcher {
+    has @.criteria;
+
+    method matches($m, $steps) {
         my $friend-color = $m.color;
         my $hostile-color = $friend-color eq 'White' ?? 'Black' !! 'White';
-        for @criteria -> [Int $x, Int $y, PieceState $ps] {
+        for @.criteria -> [Int $x, Int $y, PieceState $ps] {
             my ($rot-x, $rot-y) = rotate([$x, $y], $steps);
             my $r = $m.row - $rot-y;
             my $c = $m.col + $rot-x + $rot-y;
@@ -185,56 +187,60 @@ sub matcher(&criteria) is export {
         return True;
     }
 
+    method symmetric {
+        my @fs =
+            { $^x + $^y, -$y },     # (1, 0)
+            { $^y, $^x },           # (1, 1)
+            { -$^x, $x + $^y },     # (0, 1)
+            { -$^y - $^x, $y },     # (-1, 2)
+            { $^x, -$^y - 2 * $x }, # (-1, 1)
+            { $^x, -$x - $^y },     # (-2, 1)
+        ;
+
+        my %h = @.criteria.map(-> [$x, $y, $ps] { "<$x $y> $ps" => 1 });
+        FLIP:
+        for @fs -> &f {
+            for @.criteria -> [Int $x, Int $y, PieceState $ps] {
+                my ($fx, $fy) = f($x, $y);
+                next FLIP
+                    unless %h{"<$fx $fy> $ps"} :exists;
+            }
+            return True;
+        }
+        return False;
+    }
+
+    method ACCEPTS(Move $m is copy) {
+        return False
+            unless $m ~~ Placement | Swap;
+        if $m ~~ Swap {
+            $m = $m.game.swap-placement;
+        }
+        for ^6 -> $steps {
+            return True
+                if self.matches($m, $steps);
+        }
+        if !$.symmetric {
+            my $flip-matcher = Matcher.new(:criteria(
+                @.criteria.map(-> [$x, $y, $ps] { [$y, $x, $ps] })
+            ));
+            for ^6 -> $steps {
+                return True
+                    if $flip-matcher.matches($m, $steps);
+            }
+        }
+        return False;
+    }
+}
+
+sub matcher(&criteria) is export {
     my @criteria = do {
         my @*CRITERIA;
         &criteria();
         @*CRITERIA;
     };
 
-    return Any.new but role {
-        method symmetric {
-            my @fs =
-                { $^x + $^y, -$y },     # (1, 0)
-                { $^y, $^x },           # (1, 1)
-                { -$^x, $x + $^y },     # (0, 1)
-                { -$^y - $^x, $y },     # (-1, 2)
-                { $^x, -$^y - 2 * $x }, # (-1, 1)
-                { $^x, -$x - $^y },     # (-2, 1)
-            ;
-
-            my %h = @criteria.map(-> [$x, $y, $ps] { "<$x $y> $ps" => 1 });
-            FLIP:
-            for @fs -> &f {
-                for @criteria -> [Int $x, Int $y, PieceState $ps] {
-                    my ($fx, $fy) = f($x, $y);
-                    next FLIP
-                        unless %h{"<$fx $fy> $ps"} :exists;
-                }
-                return True;
-            }
-            return False;
-        }
-
-        method ACCEPTS(Move $m is copy) {
-            return False
-                unless $m ~~ Placement | Swap;
-            if $m ~~ Swap {
-                $m = $m.game.swap-placement;
-            }
-            for ^6 -> $steps {
-                return True
-                    if match-move($m, $steps, @criteria);
-            }
-            if !$.symmetric {
-                my @flip-criteria = @criteria.map(-> [$x, $y, $ps] { [$y, $x, $ps] });
-                for ^6 -> $steps {
-                    return True
-                        if match-move($m, $steps, @flip-criteria);
-                }
-            }
-            return False;
-        }
-    };
+    return Matcher.new(:@criteria);
 }
 
 sub rotate([$x is copy, $y is copy], $steps) {
@@ -245,4 +251,19 @@ sub rotate([$x is copy, $y is copy], $steps) {
 
 sub at([$x, $y], PieceState:D $ps) is export {
     push @*CRITERIA, [$x, $y, $ps];
+}
+
+class View {
+    has Move $.move;
+    has Int $.steps;
+}
+
+sub views(@moves, Matcher $matcher) is export {
+    gather for @moves -> $move {
+        for ^6 -> $steps {
+            if $matcher.matches($move, $steps) {
+                take View.new(:$move, :$steps);
+            }
+        }
+    }
 }

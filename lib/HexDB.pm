@@ -8,6 +8,7 @@ class Game { ... }
 class Move {
     has Int $.n;
     has Game $.game;
+    has Str $.color;
 
     method cell($r, $c) {
         $.game.cell($.n, $r, $c);
@@ -23,7 +24,6 @@ class Move {
 }
 
 class Placement is Move {
-    has Str $.color;
     has Int $.row;
     has Int $.col;
 }
@@ -103,6 +103,11 @@ class Game {
             }
         };
     }
+
+    method winner {
+        my $losing-move = @.moves[*-1];
+        return $losing-move.color eq 'White' ?? 'Black' !! 'White';
+    }
 }
 
 class HexDB {
@@ -140,7 +145,8 @@ class HexDB {
     multi method addMove(Game $game, Move:U $movetype) {
         $!games ∪= $game;
         my $n = +$game.moves;
-        $game.addMove($movetype.new(:$n, :$game));
+        my $color = $game.moves %% 2 ?? 'White' !! 'Black';
+        $game.addMove($movetype.new(:$n, :$game, :$color));
     }
 
     multi method addMove(Game $game, Int $row, Int $col) {

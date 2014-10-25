@@ -256,6 +256,7 @@ sub at([$x, $y], PieceState:D $ps) is export {
 class View {
     has Move $.move;
     has Int $.steps;
+    has Bool $.flipped;
 }
 
 sub views(@moves, Matcher $matcher) is export {
@@ -263,6 +264,16 @@ sub views(@moves, Matcher $matcher) is export {
         for ^6 -> $steps {
             if $matcher.matches($move, $steps) {
                 take View.new(:$move, :$steps);
+            }
+        }
+        if !$matcher.symmetric {
+            my $flip-matcher = Matcher.new(:criteria(
+                $matcher.criteria.map(-> [$x, $y, $ps] { [$y, $x, $ps] })
+            ));
+            for ^6 -> $steps {
+                if $flip-matcher.matches($move, $steps) {
+                    take View.new(:$move, :$steps, :flipped);
+                }
             }
         }
     }

@@ -94,7 +94,7 @@ class Game {
     has Chain %.chains;
     has @!board = [Any xx SIZE] xx SIZE;
     has $!swapped = False;
-    has $!ch = 'A';
+    has %!ch = White => 'A', Black => 'A';
 
     method addMove($move) {
         @.moves.push($move);
@@ -168,13 +168,13 @@ class Game {
         %.chains.values.grep({ .birth <= $n < .death });
     }
 
-    method !unique-chain-name {
-        'ch' ~ $!ch++;
+    method !unique-chain-name($color) {
+        'ch' ~ %!ch{$color}++ ~ $color.substr(0, 2).lc;
     }
 
     method createChain($move) {
-        my $name = self!unique-chain-name();
         my $color = $move.color;
+        my $name = self!unique-chain-name($color);
         my $birth = $move.n;
         my $row = $move.row;
         my $col = $move.col;
@@ -196,11 +196,14 @@ class Game {
     method joinChains($move, @subchains) {
         .death = $move.n
             for @subchains;
+        @subchains[0].name ~~ /^ ch \w+ (wh|bl) "'"* $/
+            or die "Didn't match @subchains[0].name()";
+        my $cl = ~$0;
         my $name = 'ch' ~ @subchains».name.map({
-            /^ ch (\w+) "'"* $/
+            /^ ch (\w+) [wh|bl] "'"* $/
                 or die "Didn't match $_";
             ~$0;
-        }).sort.join;
+        }).sort.join ~ $cl;
         my $color = $move.color;
         my $birth = $move.n;
         my $row = $move.row;
@@ -208,10 +211,16 @@ class Game {
         %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col, :@subchains);
     }
 
-    method destroyChain($move, $oldname) {
-        my $chain = %.chains{$oldname}
-            or die "Didn't find a chain $oldname";
+    method swapCreateChain($move) {
+        die "Died -- must've introduced edge chains :)" if %.chains != 1;
+        my $chain = %.chains.values[0];
         $chain.death = $move.n;
+        my $color = $move.color;
+        my $name = self!unique-chain-name($color);
+        my $birth = $move.n;
+        my $row = $move.row;
+        my $col = $move.col;
+        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col);
     }
 }
 

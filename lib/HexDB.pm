@@ -32,7 +32,11 @@ class Placement is Move {
     has Int $.col;
 
     method type {
-        callsame() ~ " {chr(ord('a') + $.col)}{$.row + 1}";
+        callsame() ~ " $.pos";
+    }
+
+    method pos {
+        chr(ord('a') + $.col) ~ ($.row + 1);
     }
 }
 

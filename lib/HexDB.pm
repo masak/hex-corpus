@@ -114,33 +114,39 @@ class Game {
 class HexDB {
     has Set $.games;
 
-    method fromCorpus {
+    method fromCorpus() {
         my $db = self.new;
         for <mvm hvm hvh> -> $level {
             for dir($level) -> $path {
-                my $filename = ~$path;
-                my $game = Game.new(:$filename);
-
-                for $path.IO.lines {
-                    when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
-                        my $col = ord(~$1) - ord('a');
-                        my $row = +$2 - 1;
-                        $db.addMove($game, $row, $col);
-                    }
-                    when "Black swaps." {
-                        $db.addMove($game, Swap);
-                    }
-                    when /^ (White|Black) ' resigns.' $/ {
-                        $db.addMove($game, Resignation);
-                    }
-                    when /^ (White|Black) ' times out.' $/ {
-                        $db.addMove($game, Timeout);
-                    }
-                    die "Unknown input '$_'";
-                }
+                $db.gameFromCorpus($path);
             }
         }
         return $db;
+    }
+
+    method gameFromCorpus(IO::Path $path) {
+        my $filename = ~$path;
+        my $game = Game.new(:$filename);
+
+        for $path.IO.lines {
+            when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+                my $col = ord(~$1) - ord('a');
+                my $row = +$2 - 1;
+                self.addMove($game, $row, $col);
+            }
+            when "Black swaps." {
+                self.addMove($game, Swap);
+            }
+            when /^ (White|Black) ' resigns.' $/ {
+                self.addMove($game, Resignation);
+            }
+            when /^ (White|Black) ' times out.' $/ {
+                self.addMove($game, Timeout);
+            }
+            die "Unknown input '$_'";
+        }
+
+        return $game;
     }
 
     multi method addMove(Game $game, Move:U $movetype) {

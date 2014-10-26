@@ -91,7 +91,8 @@ class Game {
             "  " x $r ~
             join "", (^SIZE).map: -> $c {
                 sub currentmove() {
-                    .row == $r && .col == $c given @.moves[$n];
+                    $_ ~~ Placement && .row == $r && .col == $c
+                        given @.moves[$n];
                 }
                 my $cell = self.cell($n, $r, $c);
                 my $contents = $cell eq 'White' ?? 'wh' !!

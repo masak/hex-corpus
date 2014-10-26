@@ -43,11 +43,29 @@ class Placement is Move {
     method pos {
         chr(ord('a') + $.col) ~ ($.row + 1);
     }
+
+    method Str {
+        "$.color places $.pos.";
+    }
 }
 
-class Swap is Move {}
-class Resignation is Move {}
-class Timeout is Move {}
+class Swap is Move {
+    method Str {
+        "$.color swaps.";
+    }
+}
+
+class Resignation is Move {
+    method Str {
+        "$.color resigns.";
+    }
+}
+
+class Timeout is Move {
+    method Str {
+        "$.color times out.";
+    }
+}
 
 constant SIZE = 13;
 constant INF = 200;     # need this one because Inf !~~ Int

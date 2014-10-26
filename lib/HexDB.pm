@@ -91,10 +91,14 @@ sub outside { !inside $^coord }
 class Game {
     has Str $.filename;
     has Move @.moves;
-    has Chain %.chains;
+    has Chain %.chains = edge-chains;
     has @!board = [Any xx SIZE] xx SIZE;
     has $!swapped = False;
     has %!ch = White => 'A', Black => 'A';
+
+    sub edge-chains {
+        # XXX
+    }
 
     method addMove($move) {
         @.moves.push($move);

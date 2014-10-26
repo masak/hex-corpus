@@ -104,7 +104,7 @@ class Game {
                     $_ ~~ Placement && .row == $r && .col == $c
                         given @.moves[$n];
                 }
-                my $cell = self.cell($n, $r, $c);
+                my $cell = $.cell($n, $r, $c);
                 my $contents = $cell eq 'White' ?? 'wh' !!
                                $cell eq 'Black' ?? 'bl' !!
                                '..';

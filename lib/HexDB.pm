@@ -22,6 +22,14 @@ class Move {
     method board {
         $.game.board($.n);
     }
+
+    method chain-at([$row, $col]) {
+        for $.game.active-chains($.n) -> $chain {
+            return $chain
+                if $chain.contains($row, $col);
+        }
+        return;
+    }
 }
 
 class Placement is Move {
@@ -42,6 +50,22 @@ class Resignation is Move {}
 class Timeout is Move {}
 
 constant SIZE = 13;
+constant INF = 200;     # need this one because Inf !~~ Int
+
+class Chain {
+    has Str $.name;
+    has Str $.color;
+    has Int $.birth;
+    has Int $.death is rw = INF;
+    has Int $.row;
+    has Int $.col;
+    has Chain @.subchains;
+
+    method contains($row, $col) {
+        $row == $.row && $col == $.col
+            || ?any(@.subchains).contains($row, $col);
+    }
+}
 
 sub inside { $^coord ~~ ^SIZE }
 sub outside { !inside $^coord }
@@ -49,8 +73,10 @@ sub outside { !inside $^coord }
 class Game {
     has Str $.filename;
     has Move @.moves;
+    has Chain %.chains;
     has @!board = [Any xx SIZE] xx SIZE;
     has $!swapped = False;
+    has $!ch = 'A';
 
     method addMove($move) {
         @.moves.push($move);
@@ -118,6 +144,56 @@ class Game {
     method winner {
         my $losing-move = @.moves[*-1];
         return $losing-move.color eq 'White' ?? 'Black' !! 'White';
+    }
+
+    method active-chains($n) {
+        %.chains.values.grep({ .birth <= $n < .death });
+    }
+
+    method !unique-chain-name {
+        'ch' ~ $!ch++;
+    }
+
+    method createChain($move) {
+        my $name = self!unique-chain-name();
+        my $color = $move.color;
+        my $birth = $move.n;
+        my $row = $move.row;
+        my $col = $move.col;
+        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col);
+    }
+
+    method extendChain($move, $oldname) {
+        my $chain = %.chains{$oldname}
+            or die "Didn't find a chain $oldname";
+        $chain.death = $move.n;
+        my $name = "$chain.name()'";
+        my $color = $move.color;
+        my $birth = $move.n;
+        my $row = $move.row;
+        my $col = $move.col;
+        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col, :subchains[$chain]);
+    }
+
+    method joinChains($move, @subchains) {
+        .death = $move.n
+            for @subchains;
+        my $name = 'ch' ~ @subchains».name.map({
+            /^ ch (\w+) "'"* $/
+                or die "Didn't match $_";
+            ~$0;
+        }).sort.join;
+        my $color = $move.color;
+        my $birth = $move.n;
+        my $row = $move.row;
+        my $col = $move.col;
+        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col, :@subchains);
+    }
+
+    method destroyChain($move, $oldname) {
+        my $chain = %.chains{$oldname}
+            or die "Didn't find a chain $oldname";
+        $chain.death = $move.n;
     }
 }
 

@@ -82,16 +82,17 @@ class Game {
             if outside($r) && outside($c);
 
         my $placement = @!board[$r][$c];
+        if $n == 0 && $!swapped {
+            given @.moves[0] {
+                return $r == .row && $c == .col
+                    ?? .color
+                    !! 'empty';
+            }
+        }
         return 'empty'
             unless $placement;
         return 'empty'
             if $n < $placement.n;
-        if $n == 0 && $!swapped {
-            return $r == .row && $c == .col
-                ?? .color
-                !! 'empty'
-                given @.moves[0];
-        }
         return $placement.color;
     }
 

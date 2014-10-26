@@ -15,7 +15,11 @@ class Move {
     }
 
     method gist {
-        "[move $.n in game $.game.filename()]";
+        "[move $.n ($.type) in game $.game.filename()]";
+    }
+
+    method type {
+        $.color.lc ~ " " ~ self.^name.lc;
     }
 
     method board {
@@ -26,6 +30,10 @@ class Move {
 class Placement is Move {
     has Int $.row;
     has Int $.col;
+
+    method type {
+        callsame() ~ " {chr(ord('a') + $.col)}{$.row + 1}";
+    }
 }
 
 class Swap is Move {}

@@ -1,8 +1,5 @@
 use v6;
 
-class Swap { ... }
-class Resignation { ... }
-class Timeout { ... }
 class Game { ... }
 
 class Move {

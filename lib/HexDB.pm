@@ -2,6 +2,47 @@ use v6;
 
 class Game { ... }
 
+role ChainEvent {
+    has $.chain;
+}
+
+class CreateChain does ChainEvent {}
+class ExtendChain does ChainEvent {}
+class JoinChains does ChainEvent {}
+class SwapCreateChain does ChainEvent {}
+class SwapExtendChain does ChainEvent { has $.resurrected }
+
+constant INF = 200;     # need this one because Inf !~~ Int
+
+class Chain {
+    has Str $.name;
+    has Str $.color;
+    has Int $.birth;
+    has Int $.death is rw = INF;
+    has Int $.row;
+    has Int $.col;
+    has Chain @.subchains;
+
+    method contains($row, $col) {
+        $row == $.row && $col == $.col
+            || ?any(@.subchains).contains($row, $col);
+    }
+
+    method pieces {
+        [+] 1, @.subchains».pieces;
+    }
+}
+
+class RowEdgeChain is Chain {
+    method contains($row, $) { $row == $.row }
+    method pieces { 1 }
+}
+
+class ColEdgeChain is Chain {
+    method contains($, $col) { $col == $.col }
+    method pieces { 1 }
+}
+
 class Move {
     has Int $.n;
     has Game $.game;
@@ -35,6 +76,7 @@ class Move {
 class Placement is Move {
     has Int $.row;
     has Int $.col;
+    has $.chainEvent = self!chooseChainEvent;
 
     method type {
         callsame() ~ " $.pos";
@@ -47,11 +89,100 @@ class Placement is Move {
     method Str {
         "$.color places $.pos.";
     }
+
+    method !chooseChainEvent {
+        sub neighbors {
+            my ($r, $c) = $.row, $.col;
+            ([0, 1], [1, 0], [1, -1],
+             [0, -1], [-1, 0], [-1, 1]).map(-> [$dr, $dc] {
+                [$r + $dr, $c + $dc]
+            });
+        }
+
+        sub adjacent-chains {
+            neighbors.map(-> $location {
+                self.chain-at($location)
+            }).uniq.grep({ $.color eq .color });
+        }
+
+        my @chains = adjacent-chains;
+        return
+            @chains == 0 ?? self.createChain !!
+            @chains == 1 ?? self.extendChain(@chains[0]) !!
+            # remaining cases, @chains > 1
+                            self.joinChains(@chains);
+    }
+
+    method createChain {
+        my $name = $.game.unique-chain-name($.color);
+        my $chain = Chain.new(:$name, :$.color, :birth($.n), :$.row, :$.col);
+        return CreateChain.new(:$chain);
+    }
+
+    method extendChain(Chain $oldchain) {
+        $oldchain.death = $.n;
+        my $name = $oldchain.name ~ "'";
+        my $chain = Chain.new(
+            :$name, :$.color, :birth($.n), :$.row, :$.col, :subchains[$oldchain]
+        );
+        return ExtendChain.new(:$chain);
+    }
+
+    method joinChains(@subchains) {
+        .death = $.n
+            for @subchains;
+        @subchains[0].name ~~ /^ ch \w+ (wh|bl) "'"* $/
+            or die "Didn't match @subchains[0].name()";
+        my $cl = ~$0;
+        my $name = 'ch' ~ @subchains».name.map({
+            /^ ch (\w+) [wh|bl] "'"* $/
+                or die "Didn't match $_";
+            ~$0;
+        }).sort.join ~ $cl;
+        my $chain = Chain.new(
+            :$name, :$.color, :birth($.n), :$.row, :$.col, :@subchains
+        );
+        return JoinChains.new(:$chain);
+    }
 }
 
 class Swap is Move {
+    has $.chainEvent = self.swapMumbleChain();
+
     method Str {
         "$.color swaps.";
+    }
+
+    method swapMumbleChain() {
+        $.game.moves[0].chainEvent ~~ CreateChain
+                ?? self.swapCreateChain()
+                !! self.swapExtendChain();
+    }
+
+    method swapCreateChain() {
+        my $deadchain = $.game.chains.values.first(*.birth == 0);
+        $deadchain.death = $.n;
+        my $name = $.game.unique-chain-name($.color);
+        my $move = $.game.swap-placement;
+        my $row = $move.row;
+        my $col = $move.col;
+        my $chain = Chain.new(:$name, :$.color, :birth($.n), :$row, :$col);
+        SwapCreateChain.new(:$chain)
+    }
+
+    method swapExtendChain() {
+        my $move = $.game.swap-placement;
+        my $chain = $move.chainEvent.chain;
+        my $deadchain = $.game.chains.values.first(*.birth == 0);
+        $deadchain.death = $.n;
+        my $forgotten = $deadchain.subchains[0];
+        my $resurrected = RowEdgeChain.new(
+            :name($forgotten.name ~ "''"),
+            :color($forgotten.color),
+            :birth($.n),
+            :row($forgotten.row),
+        );
+        SwapExtendChain.new(:$chain, :$resurrected);
     }
 }
 
@@ -68,22 +199,6 @@ class Timeout is Move {
 }
 
 constant SIZE = 13;
-constant INF = 200;     # need this one because Inf !~~ Int
-
-class Chain {
-    has Str $.name;
-    has Str $.color;
-    has Int $.birth;
-    has Int $.death is rw = INF;
-    has Int $.row;
-    has Int $.col;
-    has Chain @.subchains;
-
-    method contains($row, $col) {
-        $row == $.row && $col == $.col
-            || ?any(@.subchains).contains($row, $col);
-    }
-}
 
 sub inside { $^coord ~~ ^SIZE }
 sub outside { !inside $^coord }
@@ -97,7 +212,10 @@ class Game {
     has %!ch = White => 'A', Black => 'A';
 
     sub edge-chains {
-        # XXX
+        'chNORTHwh' => RowEdgeChain.new(:name<chNORTHwh>, :color<White>, :birth(-1), :row(-1)),
+        'chSOUTHwh' => RowEdgeChain.new(:name<chSOUTHwh>, :color<White>, :birth(-1), :row(SIZE)),
+        'chWESTbl' => ColEdgeChain.new(:name<chWESTbl>, :color<Black>, :birth(-1), :col(-1)),
+        'chEASTbl' => ColEdgeChain.new(:name<chEASTbl>, :color<Black>, :birth(-1), :col(SIZE)),
     }
 
     method addMove($move) {
@@ -110,6 +228,14 @@ class Game {
             my $firstmove = @.moves[0];
             @!board[$firstmove.row][$firstmove.col] = Any;
             @!board[$firstmove.col][$firstmove.row] = $.swap-placement;
+        }
+        if $move ~~ Placement | Swap {
+            my $chain = $move.chainEvent.chain;
+            %.chains{$chain.name} = $chain;
+            if $move.chainEvent ~~ SwapExtendChain {
+                my $resurrected = $move.chainEvent.resurrected;
+                %.chains{$resurrected.name} = $resurrected;
+            }
         }
     }
 
@@ -172,59 +298,8 @@ class Game {
         %.chains.values.grep({ .birth <= $n < .death });
     }
 
-    method !unique-chain-name($color) {
+    method unique-chain-name($color) {
         'ch' ~ %!ch{$color}++ ~ $color.substr(0, 2).lc;
-    }
-
-    method createChain($move) {
-        my $color = $move.color;
-        my $name = self!unique-chain-name($color);
-        my $birth = $move.n;
-        my $row = $move.row;
-        my $col = $move.col;
-        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col);
-    }
-
-    method extendChain($move, $oldname) {
-        my $chain = %.chains{$oldname}
-            or die "Didn't find a chain $oldname";
-        $chain.death = $move.n;
-        my $name = "$chain.name()'";
-        my $color = $move.color;
-        my $birth = $move.n;
-        my $row = $move.row;
-        my $col = $move.col;
-        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col, :subchains[$chain]);
-    }
-
-    method joinChains($move, @subchains) {
-        .death = $move.n
-            for @subchains;
-        @subchains[0].name ~~ /^ ch \w+ (wh|bl) "'"* $/
-            or die "Didn't match @subchains[0].name()";
-        my $cl = ~$0;
-        my $name = 'ch' ~ @subchains».name.map({
-            /^ ch (\w+) [wh|bl] "'"* $/
-                or die "Didn't match $_";
-            ~$0;
-        }).sort.join ~ $cl;
-        my $color = $move.color;
-        my $birth = $move.n;
-        my $row = $move.row;
-        my $col = $move.col;
-        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col, :@subchains);
-    }
-
-    method swapCreateChain($move) {
-        die "Died -- must've introduced edge chains :)" if %.chains != 1;
-        my $chain = %.chains.values[0];
-        $chain.death = $move.n;
-        my $color = $move.color;
-        my $name = self!unique-chain-name($color);
-        my $birth = $move.n;
-        my $row = $move.row;
-        my $col = $move.col;
-        %.chains{$name} = Chain.new(:$name, :$color, :$birth, :$row, :$col);
     }
 }
 

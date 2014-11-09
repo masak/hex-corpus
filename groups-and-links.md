@@ -105,3 +105,45 @@ investigations and questions.
 
 Some progress. I like how getting some of the answers immediately leads to more
 precise questions.
+
+**Another update, much later**: Here's my current thinking.
+
+* **Links** are real and unquestionable. They exist between chains of the
+  same color. A link always has a physical extent on the board, taking up 1,
+  3, or 5 empty cells between two chains. A move can act to create friendly
+  links and/or destroy enemy links.
+
+* Between two given chains there may be zero or more links.
+
+* **Using** a link means laying claim to the underlying cells spanned by that
+  link. The one restriction is that no two links of the same color may use
+  any cell more than once. Using two overlapping links at the same time is
+  disallowed.
+
+* Using two or more links between two given chains causes those two chains
+  to **meld** together. Melding is an equivalence relation; in particular, it
+  is transitive: if `a ~ b` and `b ~ c`, then `a ~ c`.
+
+* A **cluster** is a complete set of choices whether to use each of a set of
+  links. A cluster is **maximal** if no link uses can be added to cause another
+  meld. A cluster is **frugal** if no link use can be removed without undoing
+  a meld.
+
+* The task is to find (for each player) all the maximal clusters. There is
+  always at least one; whenever there are overlapping links there might be
+  several. Focusing on the frugal maximal clusters also cuts down the choice
+  a little without losing information. Each such cluster represents a
+  significant choice of one link over another somewhere.
+
+* Maximal clusters aren't necessarily "bigger is better" &mdash; they have
+  to be evaluated in context. The cluster that gives the most advantage on
+  the board is the best one.
+
+* A game position is ambiguous if either player has more than one cluster.
+  This may or may not matter if one cluster stands out as the obviously best
+  one. On the other hand, ambiguity can also be played to the player's
+  advantage by keeping two future options open at the same time.
+
+* A **group** is defined only inside a given cluster as an equivalence class
+  of melded chains. Groups can still have links between them, but never
+  enough to meld.

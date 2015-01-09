@@ -1,0 +1,41 @@
+use lib '.';
+
+use DBIish;
+my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
+
+# Color
+#
+# The possible states of a position on the board. A position can be either empty,
+# occupied by the white player, or occupied by the black player.
+
+$dbh.do('DROP TABLE IF EXISTS color');
+$dbh.do('CREATE TABLE color (
+    color_id int PRIMARY KEY,
+    opposite_color_id int,
+    name varchar(20)
+)');
+
+$dbh.do('INSERT INTO color (color_id, opposite_color_id, name) VALUES
+    (0, 0, "EMPTY"),
+    (1, 2, "WHITE"),
+    (2, 1, "BLACK")
+');
+
+# Coord
+#
+# The possible coordinates on a board. Of the form `Xnn`, where `X` ranges from
+# `a` to `m`, and `nn` ranges from `1` to `13`. This is a cross product. In total,
+# there are 13 * 13 = 169 coordinates.
+
+$dbh.do('DROP TABLE IF EXISTS coord');
+$dbh.do('CREATE TABLE coord (
+    coord_id int PRIMARY KEY,
+    name varchar(3)
+)');
+
+my $id = 0;
+for 'a'..'m' X~ 1..13 {
+    $dbh.do(qq[INSERT INTO coord (coord_id, name) VALUES ({$id++}, "$_")]);
+}
+
+$dbh.disconnect;

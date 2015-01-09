@@ -1,0 +1,42 @@
+my @jobs = <
+    enums
+    games
+    moves
+    chains
+    links
+    overlaps
+>;
+
+multi MAIN() {
+    say "[No argument. Assuming argument 'all'.]";
+    MAIN('all');
+}
+
+multi MAIN('all') {
+    MAIN(@jobs[0]);
+}
+
+multi MAIN($job) {
+    my $index = @jobs.first-index($job);
+    conk "Job '$job' unknown -- aborting"
+        unless defined $index;
+    for @jobs[$index..*] -> $job {
+        rebuild($job);
+    }
+}
+
+###
+
+sub rebuild($job) {
+    my $script = "rebuild-$job";
+    conk "no such script $script -- aborting"
+        unless $script.IO.e;
+    say "[rebuild $job]";
+    shell "perl6 $script"
+        or conk "something wrong when running inferior script -- aborting";
+}
+
+sub conk($message) {
+    note $message;
+    exit(1);
+}

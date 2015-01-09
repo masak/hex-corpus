@@ -12,15 +12,15 @@ my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
 $dbh.do('DROP TABLE IF EXISTS games');
 $dbh.do(q:to/./);
     CREATE TABLE games (
-        game_id         int PRIMARY KEY,
-        was_swapped     int,
-        was_resigned    int,
-        was_timeout     int
+        game_id         INTEGER PRIMARY KEY,
+        name            VARCHAR(20),
+        was_swapped     INTEGER,
+        was_resigned    INTEGER,
+        was_timeout     INTEGER
     )
     .
 
 my $tot = dir("mvm").elems + dir("hvm").elems + dir("hvh").elems;
-my $game_id = 0;
 for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     my $was_resigned = 0;
     my $was_timeout = 0;
@@ -43,11 +43,9 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     }
 
     $dbh.do(qq:to/./);
-        INSERT INTO games (game_id, was_swapped, was_resigned, was_timeout)
-            VALUES ($game_id, $was_swapped, $was_resigned, $was_timeout)
+        INSERT INTO games (name, was_swapped, was_resigned, was_timeout)
+            VALUES ("$path", $was_swapped, $was_resigned, $was_timeout)
     .
-
-    ++$game_id;
 }
 
 $dbh.disconnect;

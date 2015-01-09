@@ -10,15 +10,15 @@ my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
 
 $dbh.do('DROP TABLE IF EXISTS colors');
 $dbh.do('CREATE TABLE colors (
-    color_id int PRIMARY KEY,
-    opposite_color_id int,
-    name varchar(20)
+    color_id INTEGER PRIMARY KEY,
+    opposite_color_id INTEGER,
+    name VARCHAR(20)
 )');
 
-$dbh.do('INSERT INTO colors (color_id, opposite_color_id, name) VALUES
-    (0, 0, "EMPTY"),
-    (1, 2, "WHITE"),
-    (2, 1, "BLACK")
+$dbh.do('INSERT INTO colors (opposite_color_id, name) VALUES
+    (1, "EMPTY"),
+    (3, "WHITE"),
+    (2, "BLACK")
 ');
 
 # coords
@@ -29,13 +29,12 @@ $dbh.do('INSERT INTO colors (color_id, opposite_color_id, name) VALUES
 
 $dbh.do('DROP TABLE IF EXISTS coords');
 $dbh.do('CREATE TABLE coords (
-    coord_id int PRIMARY KEY,
-    name varchar(3)
+    coord_id INTEGER PRIMARY KEY,
+    name VARCHAR(3)
 )');
 
-my $id = 0;
 for 'a'..'m' X~ 1..13 {
-    $dbh.do(qq[INSERT INTO coords (coord_id, name) VALUES ({$id++}, "$_")]);
+    $dbh.do(qq[INSERT INTO coords (name) VALUES ("$_")]);
 }
 
 $dbh.disconnect;

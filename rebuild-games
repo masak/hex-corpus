@@ -1,0 +1,53 @@
+use lib '.';
+
+use DBIish;
+my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
+
+# games
+#
+# A game between two players, already concluded. All the properties on it are in the
+# past tense. A game was swapped if the second move was a swap move. A game was
+# resigned if the last move was a resign move. Otherwise, the game was timed out.
+
+$dbh.do('DROP TABLE IF EXISTS games');
+$dbh.do(q:to/./);
+    CREATE TABLE games (
+        game_id         int PRIMARY KEY,
+        was_swapped     int,
+        was_resigned    int,
+        was_timeout     int
+    )
+    .
+
+my $tot = dir("mvm").elems + dir("hvm").elems + dir("hvh").elems;
+my $game_id = 0;
+for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
+    my $was_resigned = 0;
+    my $was_timeout = 0;
+    my $was_swapped = 0;
+
+    for $path.IO.lines {
+        when "Black swaps." {
+            $was_swapped = 1;
+        }
+        when /^ (White|Black) ' resigns.' $/ {
+            $was_resigned = 1;
+        }
+        when /^ (White|Black) ' times out.' $/ {
+            $was_timeout = 1;
+        }
+        when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+            # don't care, not interested, boooring
+        }
+        die "Unknown input '$_'";
+    }
+
+    $dbh.do(qq:to/./);
+        INSERT INTO games (game_id, was_swapped, was_resigned, was_timeout)
+            VALUES ($game_id, $was_swapped, $was_resigned, $was_timeout)
+    .
+
+    ++$game_id;
+}
+
+$dbh.disconnect;

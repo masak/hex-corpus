@@ -32,8 +32,12 @@ sub rebuild($job) {
     conk "no such script $script -- aborting"
         unless $script.IO.e;
     say "[rebuild $job]";
+    my $before = now;
     shell "perl6 $script"
         or conk "something wrong when running inferior script -- aborting";
+    my $after = now;
+    my $time = ($after - $before).fmt("%d s");
+    say "    (finished in $time)";
 }
 
 sub conk($message) {

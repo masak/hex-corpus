@@ -549,7 +549,7 @@ my $INSERT_64_PLACEMENTS = $dbh.prepare(q:to/./);
                (?, ?), (?, ?), (?, ?), (?, ?)
     .
 
-while @placements >= 32 {
+while @placements >= 64 {
     my $p1 = @placements.shift;
     my $p2 = @placements.shift;
     my $p3 = @placements.shift;
@@ -679,6 +679,74 @@ while @placements >= 32 {
         $p62<move_id>, $p62<coord_id>,
         $p63<move_id>, $p63<coord_id>,
         $p64<move_id>, $p64<coord_id>,
+    );
+}
+while @placements >= 32 {
+    my $p1 = @placements.shift;
+    my $p2 = @placements.shift;
+    my $p3 = @placements.shift;
+    my $p4 = @placements.shift;
+    my $p5 = @placements.shift;
+    my $p6 = @placements.shift;
+    my $p7 = @placements.shift;
+    my $p8 = @placements.shift;
+    my $p9 = @placements.shift;
+    my $p10 = @placements.shift;
+    my $p11 = @placements.shift;
+    my $p12 = @placements.shift;
+    my $p13 = @placements.shift;
+    my $p14 = @placements.shift;
+    my $p15 = @placements.shift;
+    my $p16 = @placements.shift;
+    my $p17 = @placements.shift;
+    my $p18 = @placements.shift;
+    my $p19 = @placements.shift;
+    my $p20 = @placements.shift;
+    my $p21 = @placements.shift;
+    my $p22 = @placements.shift;
+    my $p23 = @placements.shift;
+    my $p24 = @placements.shift;
+    my $p25 = @placements.shift;
+    my $p26 = @placements.shift;
+    my $p27 = @placements.shift;
+    my $p28 = @placements.shift;
+    my $p29 = @placements.shift;
+    my $p30 = @placements.shift;
+    my $p31 = @placements.shift;
+    my $p32 = @placements.shift;
+    $INSERT_32_PLACEMENTS.execute(
+        $p1<move_id>, $p1<coord_id>,
+        $p2<move_id>, $p2<coord_id>,
+        $p3<move_id>, $p3<coord_id>,
+        $p4<move_id>, $p4<coord_id>,
+        $p5<move_id>, $p5<coord_id>,
+        $p6<move_id>, $p6<coord_id>,
+        $p7<move_id>, $p7<coord_id>,
+        $p8<move_id>, $p8<coord_id>,
+        $p9<move_id>, $p9<coord_id>,
+        $p10<move_id>, $p10<coord_id>,
+        $p11<move_id>, $p11<coord_id>,
+        $p12<move_id>, $p12<coord_id>,
+        $p13<move_id>, $p13<coord_id>,
+        $p14<move_id>, $p14<coord_id>,
+        $p15<move_id>, $p15<coord_id>,
+        $p16<move_id>, $p16<coord_id>,
+        $p17<move_id>, $p17<coord_id>,
+        $p18<move_id>, $p18<coord_id>,
+        $p19<move_id>, $p19<coord_id>,
+        $p20<move_id>, $p20<coord_id>,
+        $p21<move_id>, $p21<coord_id>,
+        $p22<move_id>, $p22<coord_id>,
+        $p23<move_id>, $p23<coord_id>,
+        $p24<move_id>, $p24<coord_id>,
+        $p25<move_id>, $p25<coord_id>,
+        $p26<move_id>, $p26<coord_id>,
+        $p27<move_id>, $p27<coord_id>,
+        $p28<move_id>, $p28<coord_id>,
+        $p29<move_id>, $p29<coord_id>,
+        $p30<move_id>, $p30<coord_id>,
+        $p31<move_id>, $p31<coord_id>,
+        $p32<move_id>, $p32<coord_id>,
     );
 }
 while @placements >= 16 {

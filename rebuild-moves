@@ -126,7 +126,6 @@ for 'a'..'m' Z 1..13 -> $row1, $col2 {
 for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     my $game_id = %game_id_of{$path}
         or die "Did not find game '$path' in database";
-    say "    ", $game_id;
 
     my $seq_no = 1;
     my $saved_coord = "unassigned";

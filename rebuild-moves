@@ -781,6 +781,20 @@ my $INSERT_RESIGN = $dbh.prepare(q:to/./);
         VALUES (?)
     .
 
+my $INSERT_2_RESIGNS = $dbh.prepare(q:to/./);
+    INSERT INTO resigns (move_id)
+        VALUES (?), (?)
+    .
+
+while @resigns >= 2 {
+    my $r1 = @resigns.shift;
+    my $r2 = @resigns.shift;
+    $INSERT_2_RESIGNS.execute(
+        $r1<move_id>,
+        $r2<move_id>,
+    );
+}
+
 while @resigns {
     my $r1 = @resigns.shift;
     $INSERT_RESIGN.execute(

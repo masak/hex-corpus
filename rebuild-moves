@@ -1,0 +1,165 @@
+use lib '.';
+
+use DBIish;
+my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
+
+$dbh.do('PRAGMA foreign_keys = ON');
+
+enum Color <_ EMPTY WHITE BLACK>;
+
+# moves
+#
+# A move in a game by one of the players. A move has a sequence number within its
+# game, starting at 1. The "normal" move is a placement move, but three other
+# kinds of move also exist: a swap move, which is a modified kind of placement;
+# a resign move, which intentionally ends the game; and a timeout move, which
+# unintentionally ends the game.
+
+$dbh.do('DROP TABLE IF EXISTS moves');
+$dbh.do(q:to/./);
+    CREATE TABLE moves (
+        move_id     INTEGER PRIMARY KEY,
+        game_id     INTEGER NOT NULL,
+        color_id    INTEGER NOT NULL,
+        seq_no      INTEGER NOT NULL,
+            FOREIGN KEY(game_id) REFERENCES games(game_id),
+            FOREIGN KEY(color_id) REFERENCES colors(color_id)
+    )
+    .
+
+$dbh.do('DROP TABLE IF EXISTS placements');
+$dbh.do(q:to/./);
+    CREATE TABLE placements (
+        placement_id    INTEGER PRIMARY KEY,
+        move_id         INTEGER NOT NULL,
+        coord_id        INTEGER NOT NULL,
+            FOREIGN KEY(move_id) REFERENCES moves(move_id),
+            FOREIGN KEY(coord_id) REFERENCES coords(coord_id)
+    )
+    .
+
+$dbh.do('DROP TABLE IF EXISTS swaps');
+$dbh.do(q:to/./);
+    CREATE TABLE swaps (
+        swap_id         INTEGER PRIMARY KEY,
+        move_id         INTEGER NOT NULL,
+        placement_id    INTEGER NOT NULL,
+            FOREIGN KEY(move_id) REFERENCES moves(move_id),
+            FOREIGN KEY(placement_id) REFERENCES placements(placement_id)
+    )
+    .
+
+$dbh.do('DROP TABLE IF EXISTS resigns');
+$dbh.do(q:to/./);
+    CREATE TABLE resigns (
+        resign_id       INTEGER PRIMARY KEY,
+        move_id         INTEGER NOT NULL,
+            FOREIGN KEY(move_id) REFERENCES moves(move_id)
+    )
+    .
+
+$dbh.do('DROP TABLE IF EXISTS timeouts');
+$dbh.do(q:to/./);
+    CREATE TABLE timeouts (
+        timeout_id      INTEGER PRIMARY KEY,
+        move_id         INTEGER NOT NULL,
+            FOREIGN KEY(move_id) REFERENCES moves(move_id)
+    )
+    .
+
+my $tot = dir("mvm").elems + dir("hvm").elems + dir("hvh").elems;
+my $move_id = 1;
+my $placement_id = 1;
+
+my $INSERT_MOVE = $dbh.prepare(q:to/./);
+    INSERT INTO moves (game_id, color_id, seq_no)
+        VALUES (?, ?, ?)
+    .
+
+my $INSERT_PLACEMENT = $dbh.prepare(q:to/./);
+    INSERT INTO placements (move_id, coord_id)
+        VALUES (?, ?)
+    .
+
+my $INSERT_SWAP = $dbh.prepare(q:to/./);
+    INSERT INTO swaps (move_id, placement_id)
+        VALUES (?, ?)
+    .
+
+my $INSERT_RESIGN = $dbh.prepare(q:to/./);
+    INSERT INTO resigns (move_id)
+        VALUES (?)
+    .
+
+my $INSERT_TIMEOUT = $dbh.prepare(q:to/./);
+    INSERT INTO timeouts (move_id)
+        VALUES (?)
+    .
+
+my $select_games = $dbh.prepare(qq:to/./);
+    SELECT name, game_id
+    FROM games
+    .
+$select_games.execute();
+my %game_id_of;
+for $select_games.fetchall_arrayref.list -> [$name, $game_id] {
+    %game_id_of{$name} = $game_id;
+}
+
+my $select_coords = $dbh.prepare(qq:to/./);
+    SELECT name, coord_id
+    FROM coords
+    .
+$select_coords.execute();
+my %coord_id_of;
+for $select_coords.fetchall_arrayref.list -> [$name, $coord_id] {
+    %coord_id_of{$name} = $coord_id;
+}
+
+my %swap;
+for 'a'..'m' Z 1..13 -> $row1, $col2 {
+    for 'a'..'m' Z 1..13 -> $row2, $col1 {
+        %swap{$row1 ~ $col1} = $row2 ~ $col2;
+    }
+}
+
+for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
+    my $game_id = %game_id_of{$path}
+        or die "Did not find game '$path' in database";
+    say "    ", $game_id;
+
+    my $seq_no = 1;
+    my $saved_coord = "unassigned";
+    for $path.IO.lines {
+        my $color_id = $seq_no % 2 ?? WHITE !! BLACK;
+        $INSERT_MOVE.execute($game_id, $color_id, $seq_no);
+
+        when /^ (White|Black) ' places ' (\w\d+) '.' $/ {
+            my $coord = ~$1;
+            my $coord_id = %coord_id_of{$coord};
+            $INSERT_PLACEMENT.execute($move_id, $coord_id);
+            $saved_coord = $coord;
+        }
+        when "Black swaps." {
+            my $coord = %swap{$saved_coord};
+            my $coord_id = %coord_id_of{$coord};
+            $INSERT_PLACEMENT.execute($move_id, $coord_id);
+            $INSERT_SWAP.execute($move_id, $placement_id);
+            ++$placement_id;
+        }
+        when /^ (White|Black) ' resigns.' $/ {
+            $INSERT_RESIGN.execute($move_id);
+        }
+        when /^ (White|Black) ' times out.' $/ {
+            $INSERT_TIMEOUT.execute($move_id);
+        }
+        die "Unknown input '$_'";
+
+        NEXT {
+            ++$move_id;
+            ++$seq_no;
+        }
+    }
+}
+
+$dbh.disconnect;

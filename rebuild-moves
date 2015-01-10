@@ -185,6 +185,158 @@ my $INSERT_32_MOVES = $dbh.prepare(q:to/./);
                (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?)
     .
 
+my $INSERT_64_MOVES = $dbh.prepare(q:to/./);
+    INSERT INTO moves (game_id, color_id, seq_no)
+        VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?),
+               (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?)
+    .
+
+while @moves >= 64 {
+    my $m1 = @moves.shift;
+    my $m2 = @moves.shift;
+    my $m3 = @moves.shift;
+    my $m4 = @moves.shift;
+    my $m5 = @moves.shift;
+    my $m6 = @moves.shift;
+    my $m7 = @moves.shift;
+    my $m8 = @moves.shift;
+    my $m9 = @moves.shift;
+    my $m10 = @moves.shift;
+    my $m11 = @moves.shift;
+    my $m12 = @moves.shift;
+    my $m13 = @moves.shift;
+    my $m14 = @moves.shift;
+    my $m15 = @moves.shift;
+    my $m16 = @moves.shift;
+    my $m17 = @moves.shift;
+    my $m18 = @moves.shift;
+    my $m19 = @moves.shift;
+    my $m20 = @moves.shift;
+    my $m21 = @moves.shift;
+    my $m22 = @moves.shift;
+    my $m23 = @moves.shift;
+    my $m24 = @moves.shift;
+    my $m25 = @moves.shift;
+    my $m26 = @moves.shift;
+    my $m27 = @moves.shift;
+    my $m28 = @moves.shift;
+    my $m29 = @moves.shift;
+    my $m30 = @moves.shift;
+    my $m31 = @moves.shift;
+    my $m32 = @moves.shift;
+    my $m33 = @moves.shift;
+    my $m34 = @moves.shift;
+    my $m35 = @moves.shift;
+    my $m36 = @moves.shift;
+    my $m37 = @moves.shift;
+    my $m38 = @moves.shift;
+    my $m39 = @moves.shift;
+    my $m40 = @moves.shift;
+    my $m41 = @moves.shift;
+    my $m42 = @moves.shift;
+    my $m43 = @moves.shift;
+    my $m44 = @moves.shift;
+    my $m45 = @moves.shift;
+    my $m46 = @moves.shift;
+    my $m47 = @moves.shift;
+    my $m48 = @moves.shift;
+    my $m49 = @moves.shift;
+    my $m50 = @moves.shift;
+    my $m51 = @moves.shift;
+    my $m52 = @moves.shift;
+    my $m53 = @moves.shift;
+    my $m54 = @moves.shift;
+    my $m55 = @moves.shift;
+    my $m56 = @moves.shift;
+    my $m57 = @moves.shift;
+    my $m58 = @moves.shift;
+    my $m59 = @moves.shift;
+    my $m60 = @moves.shift;
+    my $m61 = @moves.shift;
+    my $m62 = @moves.shift;
+    my $m63 = @moves.shift;
+    my $m64 = @moves.shift;
+    $INSERT_64_MOVES.execute(
+        $m1<game_id>, $m1<color_id>, $m1<seq_no>,
+        $m2<game_id>, $m2<color_id>, $m2<seq_no>,
+        $m3<game_id>, $m3<color_id>, $m3<seq_no>,
+        $m4<game_id>, $m4<color_id>, $m4<seq_no>,
+        $m5<game_id>, $m5<color_id>, $m5<seq_no>,
+        $m6<game_id>, $m6<color_id>, $m6<seq_no>,
+        $m7<game_id>, $m7<color_id>, $m7<seq_no>,
+        $m8<game_id>, $m8<color_id>, $m8<seq_no>,
+        $m9<game_id>, $m9<color_id>, $m9<seq_no>,
+        $m10<game_id>, $m10<color_id>, $m10<seq_no>,
+        $m11<game_id>, $m11<color_id>, $m11<seq_no>,
+        $m12<game_id>, $m12<color_id>, $m12<seq_no>,
+        $m13<game_id>, $m13<color_id>, $m13<seq_no>,
+        $m14<game_id>, $m14<color_id>, $m14<seq_no>,
+        $m15<game_id>, $m15<color_id>, $m15<seq_no>,
+        $m16<game_id>, $m16<color_id>, $m16<seq_no>,
+        $m17<game_id>, $m17<color_id>, $m17<seq_no>,
+        $m18<game_id>, $m18<color_id>, $m18<seq_no>,
+        $m19<game_id>, $m19<color_id>, $m19<seq_no>,
+        $m20<game_id>, $m20<color_id>, $m20<seq_no>,
+        $m21<game_id>, $m21<color_id>, $m21<seq_no>,
+        $m22<game_id>, $m22<color_id>, $m22<seq_no>,
+        $m23<game_id>, $m23<color_id>, $m23<seq_no>,
+        $m24<game_id>, $m24<color_id>, $m24<seq_no>,
+        $m25<game_id>, $m25<color_id>, $m25<seq_no>,
+        $m26<game_id>, $m26<color_id>, $m26<seq_no>,
+        $m27<game_id>, $m27<color_id>, $m27<seq_no>,
+        $m28<game_id>, $m28<color_id>, $m28<seq_no>,
+        $m29<game_id>, $m29<color_id>, $m29<seq_no>,
+        $m30<game_id>, $m30<color_id>, $m30<seq_no>,
+        $m31<game_id>, $m31<color_id>, $m31<seq_no>,
+        $m32<game_id>, $m32<color_id>, $m32<seq_no>,
+        $m33<game_id>, $m33<color_id>, $m33<seq_no>,
+        $m34<game_id>, $m34<color_id>, $m34<seq_no>,
+        $m35<game_id>, $m35<color_id>, $m35<seq_no>,
+        $m36<game_id>, $m36<color_id>, $m36<seq_no>,
+        $m37<game_id>, $m37<color_id>, $m37<seq_no>,
+        $m38<game_id>, $m38<color_id>, $m38<seq_no>,
+        $m39<game_id>, $m39<color_id>, $m39<seq_no>,
+        $m40<game_id>, $m40<color_id>, $m40<seq_no>,
+        $m41<game_id>, $m41<color_id>, $m41<seq_no>,
+        $m42<game_id>, $m42<color_id>, $m42<seq_no>,
+        $m43<game_id>, $m43<color_id>, $m43<seq_no>,
+        $m44<game_id>, $m44<color_id>, $m44<seq_no>,
+        $m45<game_id>, $m45<color_id>, $m45<seq_no>,
+        $m46<game_id>, $m46<color_id>, $m46<seq_no>,
+        $m47<game_id>, $m47<color_id>, $m47<seq_no>,
+        $m48<game_id>, $m48<color_id>, $m48<seq_no>,
+        $m49<game_id>, $m49<color_id>, $m49<seq_no>,
+        $m50<game_id>, $m50<color_id>, $m50<seq_no>,
+        $m51<game_id>, $m51<color_id>, $m51<seq_no>,
+        $m52<game_id>, $m52<color_id>, $m52<seq_no>,
+        $m53<game_id>, $m53<color_id>, $m53<seq_no>,
+        $m54<game_id>, $m54<color_id>, $m54<seq_no>,
+        $m55<game_id>, $m55<color_id>, $m55<seq_no>,
+        $m56<game_id>, $m56<color_id>, $m56<seq_no>,
+        $m57<game_id>, $m57<color_id>, $m57<seq_no>,
+        $m58<game_id>, $m58<color_id>, $m58<seq_no>,
+        $m59<game_id>, $m59<color_id>, $m59<seq_no>,
+        $m60<game_id>, $m60<color_id>, $m60<seq_no>,
+        $m61<game_id>, $m61<color_id>, $m61<seq_no>,
+        $m62<game_id>, $m62<color_id>, $m62<seq_no>,
+        $m63<game_id>, $m63<color_id>, $m63<seq_no>,
+        $m64<game_id>, $m64<color_id>, $m64<seq_no>,
+    );
+}
 while @moves >= 32 {
     my $m1 = @moves.shift;
     my $m2 = @moves.shift;
@@ -377,6 +529,26 @@ my $INSERT_32_PLACEMENTS = $dbh.prepare(q:to/./);
                (?, ?), (?, ?), (?, ?), (?, ?)
     .
 
+my $INSERT_64_PLACEMENTS = $dbh.prepare(q:to/./);
+    INSERT INTO placements (move_id, coord_id)
+        VALUES (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?),
+               (?, ?), (?, ?), (?, ?), (?, ?)
+    .
+
 while @placements >= 32 {
     my $p1 = @placements.shift;
     my $p2 = @placements.shift;
@@ -410,7 +582,39 @@ while @placements >= 32 {
     my $p30 = @placements.shift;
     my $p31 = @placements.shift;
     my $p32 = @placements.shift;
-    $INSERT_32_PLACEMENTS.execute(
+    my $p33 = @placements.shift;
+    my $p34 = @placements.shift;
+    my $p35 = @placements.shift;
+    my $p36 = @placements.shift;
+    my $p37 = @placements.shift;
+    my $p38 = @placements.shift;
+    my $p39 = @placements.shift;
+    my $p40 = @placements.shift;
+    my $p41 = @placements.shift;
+    my $p42 = @placements.shift;
+    my $p43 = @placements.shift;
+    my $p44 = @placements.shift;
+    my $p45 = @placements.shift;
+    my $p46 = @placements.shift;
+    my $p47 = @placements.shift;
+    my $p48 = @placements.shift;
+    my $p49 = @placements.shift;
+    my $p50 = @placements.shift;
+    my $p51 = @placements.shift;
+    my $p52 = @placements.shift;
+    my $p53 = @placements.shift;
+    my $p54 = @placements.shift;
+    my $p55 = @placements.shift;
+    my $p56 = @placements.shift;
+    my $p57 = @placements.shift;
+    my $p58 = @placements.shift;
+    my $p59 = @placements.shift;
+    my $p60 = @placements.shift;
+    my $p61 = @placements.shift;
+    my $p62 = @placements.shift;
+    my $p63 = @placements.shift;
+    my $p64 = @placements.shift;
+    $INSERT_64_PLACEMENTS.execute(
         $p1<move_id>, $p1<coord_id>,
         $p2<move_id>, $p2<coord_id>,
         $p3<move_id>, $p3<coord_id>,
@@ -443,6 +647,38 @@ while @placements >= 32 {
         $p30<move_id>, $p30<coord_id>,
         $p31<move_id>, $p31<coord_id>,
         $p32<move_id>, $p32<coord_id>,
+        $p33<move_id>, $p33<coord_id>,
+        $p34<move_id>, $p34<coord_id>,
+        $p35<move_id>, $p35<coord_id>,
+        $p36<move_id>, $p36<coord_id>,
+        $p37<move_id>, $p37<coord_id>,
+        $p38<move_id>, $p38<coord_id>,
+        $p39<move_id>, $p39<coord_id>,
+        $p40<move_id>, $p40<coord_id>,
+        $p41<move_id>, $p41<coord_id>,
+        $p42<move_id>, $p42<coord_id>,
+        $p43<move_id>, $p43<coord_id>,
+        $p44<move_id>, $p44<coord_id>,
+        $p45<move_id>, $p45<coord_id>,
+        $p46<move_id>, $p46<coord_id>,
+        $p47<move_id>, $p47<coord_id>,
+        $p48<move_id>, $p48<coord_id>,
+        $p49<move_id>, $p49<coord_id>,
+        $p50<move_id>, $p50<coord_id>,
+        $p51<move_id>, $p51<coord_id>,
+        $p52<move_id>, $p52<coord_id>,
+        $p53<move_id>, $p53<coord_id>,
+        $p54<move_id>, $p54<coord_id>,
+        $p55<move_id>, $p55<coord_id>,
+        $p56<move_id>, $p56<coord_id>,
+        $p57<move_id>, $p57<coord_id>,
+        $p58<move_id>, $p58<coord_id>,
+        $p59<move_id>, $p59<coord_id>,
+        $p60<move_id>, $p60<coord_id>,
+        $p61<move_id>, $p61<coord_id>,
+        $p62<move_id>, $p62<coord_id>,
+        $p63<move_id>, $p63<coord_id>,
+        $p64<move_id>, $p64<coord_id>,
     );
 }
 while @placements >= 16 {

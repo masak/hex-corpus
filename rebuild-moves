@@ -144,31 +144,45 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     }
 }
 
-for 256, 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
-    if @moves >= $n {
+my $I_256_MOVES = $dbh.prepare(
+    sprintf "INSERT INTO moves %s VALUES %s",
+        "(game_id, color_id, seq_no)",
+        ("(?, ?, ?)" xx 256).join(", "));
+
+while @moves {
+    my @m = @moves.splice(0, 256);
+    my @args = @m.map({ .<game_id>, .<color_id>, .<seq_no> });
+
+    if @m == 256 {
+        $I_256_MOVES.execute(|@args);
+    }
+    else {
         my $insert_n = $dbh.prepare(
             sprintf "INSERT INTO moves %s VALUES %s",
                 "(game_id, color_id, seq_no)",
-                ("(?, ?, ?)" xx $n).join(", "));
-        while @moves >= $n {
-            my @m = @moves.splice(0, $n);
-            my @args = @m.map({ .<game_id>, .<color_id>, .<seq_no> });
-            $insert_n.execute(|@args);
-        }
+                ("(?, ?, ?)" xx @m).join(", "));
+        $insert_n.execute(|@args);
     }
 }
  
-for 256, 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
-    if @placements >= $n {
+my $I_256_PLACEMENTS = $dbh.prepare(
+    sprintf "INSERT INTO placements %s VALUES %s",
+        "(move_id, coord_id)",
+        ("(?, ?)" xx 256).join(", "));
+
+while @placements {
+    my @m = @placements.splice(0, 256);
+    my @args = @m.map({ .<move_id>, .<coord_id> });
+
+    if @m == 256 {
+        $I_256_PLACEMENTS.execute(|@args);
+    }
+    else {
         my $insert_n = $dbh.prepare(
             sprintf "INSERT INTO placements %s VALUES %s",
                 "(move_id, coord_id)",
-                ("(?, ?)" xx $n).join(", "));
-        while @placements >= $n {
-            my @m = @placements.splice(0, $n);
-            my @args = @m.map({ .<move_id>, .<coord_id> });
-            $insert_n.execute(|@args);
-        }
+                ("(?, ?)" xx @m).join(", "));
+        $insert_n.execute(|@args);
     }
 }
 

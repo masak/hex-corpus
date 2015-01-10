@@ -69,33 +69,6 @@ $dbh.do(q:to/./);
     .
 
 my $tot = dir("mvm").elems + dir("hvm").elems + dir("hvh").elems;
-my $move_id = 1;
-my $placement_id = 1;
-
-my $INSERT_MOVE = $dbh.prepare(q:to/./);
-    INSERT INTO moves (game_id, color_id, seq_no)
-        VALUES (?, ?, ?)
-    .
-
-my $INSERT_PLACEMENT = $dbh.prepare(q:to/./);
-    INSERT INTO placements (move_id, coord_id)
-        VALUES (?, ?)
-    .
-
-my $INSERT_SWAP = $dbh.prepare(q:to/./);
-    INSERT INTO swaps (move_id, placement_id)
-        VALUES (?, ?)
-    .
-
-my $INSERT_RESIGN = $dbh.prepare(q:to/./);
-    INSERT INTO resigns (move_id)
-        VALUES (?)
-    .
-
-my $INSERT_TIMEOUT = $dbh.prepare(q:to/./);
-    INSERT INTO timeouts (move_id)
-        VALUES (?)
-    .
 
 my $select_games = $dbh.prepare(qq:to/./);
     SELECT name, game_id
@@ -124,6 +97,15 @@ for 'a'..'m' Z 1..13 -> $row1, $col2 {
     }
 }
 
+my $move_id = 1;
+my $placement_id = 1;
+
+my @moves;
+my @placements;
+my @swaps;
+my @resigns;
+my @timeouts;
+
 for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     my $game_id = %game_id_of{$path}
         or die "Did not find game '$path' in database";
@@ -131,27 +113,27 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     my $seq_no = 1;
     my $saved_coord = "unassigned";
     for $path.IO.lines {
-        my $color_id = $seq_no % 2 ?? WHITE !! BLACK;
-        $INSERT_MOVE.execute($game_id, $color_id, $seq_no);
+        my $color_id = $seq_no % 2 ?? +WHITE !! +BLACK;
+        @moves.push: { :$game_id, :$color_id, :$seq_no };
 
-        when /^ (White|Black) ' places ' (\w\d+) '.' $/ {
-            my $coord = ~$1;
+        when /^ [White|Black] ' places ' (\w\d+) '.' $/ {
+            my $coord = ~$0;
             my $coord_id = %coord_id_of{$coord};
-            $INSERT_PLACEMENT.execute($move_id, $coord_id);
+            @placements.push: { :$move_id, :$coord_id };
             $saved_coord = $coord;
         }
         when "Black swaps." {
             my $coord = %swap{$saved_coord};
             my $coord_id = %coord_id_of{$coord};
-            $INSERT_PLACEMENT.execute($move_id, $coord_id);
-            $INSERT_SWAP.execute($move_id, $placement_id);
+            @placements.push: { :$move_id, :$coord_id };
+            @swaps.push: { :$move_id, :$placement_id };
             ++$placement_id;
         }
         when /^ (White|Black) ' resigns.' $/ {
-            $INSERT_RESIGN.execute($move_id);
+            @resigns.push: { :$move_id };
         }
         when /^ (White|Black) ' times out.' $/ {
-            $INSERT_TIMEOUT.execute($move_id);
+            @timeouts.push: { :$move_id };
         }
         die "Unknown input '$_'";
 
@@ -160,6 +142,92 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
             ++$seq_no;
         }
     }
+}
+
+my $INSERT_MOVE = $dbh.prepare(q:to/./);
+    INSERT INTO moves (game_id, color_id, seq_no)
+        VALUES (?, ?, ?)
+    .
+
+my $INSERT_2_MOVES = $dbh.prepare(q:to/./);
+    INSERT INTO moves (game_id, color_id, seq_no)
+        VALUES (?, ?, ?), (?, ?, ?)
+    .
+
+while @moves >= 2 {
+    my $m1 = @moves.shift;
+    my $m2 = @moves.shift;
+    $INSERT_2_MOVES.execute(
+        $m1<game_id>, $m1<color_id>, $m1<seq_no>,
+        $m2<game_id>, $m2<color_id>, $m2<seq_no>,
+    );
+}
+while @moves {
+    my $m1 = @moves.shift;
+    $INSERT_MOVE.execute(
+        $m1<game_id>, $m1<color_id>, $m1<seq_no>,
+    );
+}
+
+my $INSERT_PLACEMENT = $dbh.prepare(q:to/./);
+    INSERT INTO placements (move_id, coord_id)
+        VALUES (?, ?)
+    .
+
+my $INSERT_2_PLACEMENTS = $dbh.prepare(q:to/./);
+    INSERT INTO placements (move_id, coord_id)
+        VALUES (?, ?), (?, ?)
+    .
+
+while @placements >= 2 {
+    my $p1 = @placements.shift;
+    my $p2 = @placements.shift;
+    $INSERT_2_PLACEMENTS.execute(
+        $p1<move_id>, $p1<coord_id>,
+        $p2<move_id>, $p2<coord_id>,
+    );
+}
+while @placements {
+    my $p1 = @placements.shift;
+    $INSERT_PLACEMENT.execute(
+        $p1<move_id>, $p1<coord_id>,
+    );
+}
+
+my $INSERT_SWAP = $dbh.prepare(q:to/./);
+    INSERT INTO swaps (move_id, placement_id)
+        VALUES (?, ?)
+    .
+
+while @swaps {
+    my $s1 = @swaps.shift;
+    $INSERT_SWAP.execute(
+        $s1<move_id>, $s1<placement_id>
+    );
+}
+
+my $INSERT_RESIGN = $dbh.prepare(q:to/./);
+    INSERT INTO resigns (move_id)
+        VALUES (?)
+    .
+
+while @resigns {
+    my $r1 = @resigns.shift;
+    $INSERT_RESIGN.execute(
+        $r1<move_id>
+    );
+}
+
+my $INSERT_TIMEOUT = $dbh.prepare(q:to/./);
+    INSERT INTO timeouts (move_id)
+        VALUES (?)
+    .
+
+while @timeouts {
+    my $t1 = @timeouts.shift;
+    $INSERT_TIMEOUT.execute(
+        $t1<move_id>
+    );
 }
 
 $dbh.disconnect;

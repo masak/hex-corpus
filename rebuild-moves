@@ -144,17 +144,17 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     }
 }
 
-my $I_256_MOVES = $dbh.prepare(
+my $I_500_MOVES = $dbh.prepare(
     sprintf "INSERT INTO moves %s VALUES %s",
         "(game_id, color_id, seq_no)",
-        ("(?, ?, ?)" xx 256).join(", "));
+        ("(?, ?, ?)" xx 500).join(", "));
 
 while @moves {
-    my @m = @moves.splice(0, 256);
+    my @m = @moves.splice(0, 500);
     my @args = @m.map({ .<game_id>, .<color_id>, .<seq_no> });
 
-    if @m == 256 {
-        $I_256_MOVES.execute(|@args);
+    if @m == 500 {
+        $I_500_MOVES.execute(|@args);
     }
     else {
         my $insert_n = $dbh.prepare(
@@ -165,17 +165,17 @@ while @moves {
     }
 }
  
-my $I_256_PLACEMENTS = $dbh.prepare(
+my $I_500_PLACEMENTS = $dbh.prepare(
     sprintf "INSERT INTO placements %s VALUES %s",
         "(move_id, coord_id)",
-        ("(?, ?)" xx 256).join(", "));
+        ("(?, ?)" xx 500).join(", "));
 
 while @placements {
-    my @m = @placements.splice(0, 256);
+    my @m = @placements.splice(0, 500);
     my @args = @m.map({ .<move_id>, .<coord_id> });
 
-    if @m == 256 {
-        $I_256_PLACEMENTS.execute(|@args);
+    if @m == 500 {
+        $I_500_PLACEMENTS.execute(|@args);
     }
     else {
         my $insert_n = $dbh.prepare(

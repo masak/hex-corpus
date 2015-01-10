@@ -144,7 +144,7 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     }
 }
 
-for 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
+for 256, 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
     if @moves >= $n {
         my $insert_n = $dbh.prepare(
             sprintf "INSERT INTO moves %s VALUES %s",
@@ -157,8 +157,8 @@ for 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
         }
     }
 }
-
-for 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
+ 
+for 256, 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
     if @placements >= $n {
         my $insert_n = $dbh.prepare(
             sprintf "INSERT INTO placements %s VALUES %s",
@@ -172,46 +172,31 @@ for 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
     }
 }
 
-for 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
-    if @swaps >= $n {
-        my $insert_n = $dbh.prepare(
-            sprintf "INSERT INTO swaps %s VALUES %s",
-                "(move_id, placement_id)",
-                ("(?, ?)" xx $n).join(", "));
-        while @swaps >= $n {
-            my @m = @swaps.splice(0, $n);
-            my @args = @m.map({ .<move_id>, .<placement_id> });
-            $insert_n.execute(|@args);
-        }
-    }
+{
+    my $insert_n = $dbh.prepare(
+        sprintf "INSERT INTO swaps %s VALUES %s",
+            "(move_id, placement_id)",
+            ("(?, ?)" xx @swaps).join(", "));
+    my @args = @swaps.map({ .<move_id>, .<placement_id> });
+    $insert_n.execute(|@args);
 }
 
-for 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
-    if @resigns >= $n {
-        my $insert_n = $dbh.prepare(
-            sprintf "INSERT INTO resigns %s VALUES %s",
-                "(move_id)",
-                ("(?)" xx $n).join(", "));
-        while @resigns >= $n {
-            my @m = @resigns.splice(0, $n);
-            my @args = @m.map({ .<move_id> });
-            $insert_n.execute(|@args);
-        }
-    }
+{
+    my $insert_n = $dbh.prepare(
+        sprintf "INSERT INTO resigns %s VALUES %s",
+            "(move_id)",
+            ("(?)" xx @resigns).join(", "));
+    my @args = @resigns.map({ .<move_id> });
+    $insert_n.execute(|@args);
 }
 
-for 128, 64, 32, 16, 8, 4, 2, 1 -> $n {
-    if @timeouts >= $n {
-        my $insert_n = $dbh.prepare(
-            sprintf "INSERT INTO timeouts %s VALUES %s",
-                "(move_id)",
-                ("(?)" xx $n).join(", "));
-        while @timeouts >= $n {
-            my @m = @timeouts.splice(0, $n);
-            my @args = @m.map({ .<move_id> });
-            $insert_n.execute(|@args);
-        }
-    }
+{
+    my $insert_n = $dbh.prepare(
+        sprintf "INSERT INTO timeouts %s VALUES %s",
+            "(move_id)",
+            ("(?)" xx @timeouts).join(", "));
+    my @args = @timeouts.map({ .<move_id> });
+    $insert_n.execute(|@args);
 }
 
 $dbh.disconnect;

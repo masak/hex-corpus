@@ -15,7 +15,12 @@ enum Color <_ EMPTY WHITE BLACK>;
 # a resign move, which intentionally ends the game; and a timeout move, which
 # unintentionally ends the game.
 
+$dbh.do('DROP TABLE IF EXISTS timeouts');
+$dbh.do('DROP TABLE IF EXISTS resigns');
+$dbh.do('DROP TABLE IF EXISTS swaps');
+$dbh.do('DROP TABLE IF EXISTS placements');
 $dbh.do('DROP TABLE IF EXISTS moves');
+
 $dbh.do(q:to/./);
     CREATE TABLE moves (
         move_id     INTEGER PRIMARY KEY,
@@ -27,7 +32,6 @@ $dbh.do(q:to/./);
     )
     .
 
-$dbh.do('DROP TABLE IF EXISTS placements');
 $dbh.do(q:to/./);
     CREATE TABLE placements (
         placement_id    INTEGER PRIMARY KEY,
@@ -38,7 +42,6 @@ $dbh.do(q:to/./);
     )
     .
 
-$dbh.do('DROP TABLE IF EXISTS swaps');
 $dbh.do(q:to/./);
     CREATE TABLE swaps (
         swap_id         INTEGER PRIMARY KEY,
@@ -49,7 +52,6 @@ $dbh.do(q:to/./);
     )
     .
 
-$dbh.do('DROP TABLE IF EXISTS resigns');
 $dbh.do(q:to/./);
     CREATE TABLE resigns (
         resign_id       INTEGER PRIMARY KEY,
@@ -58,7 +60,6 @@ $dbh.do(q:to/./);
     )
     .
 
-$dbh.do('DROP TABLE IF EXISTS timeouts');
 $dbh.do(q:to/./);
     CREATE TABLE timeouts (
         timeout_id      INTEGER PRIMARY KEY,

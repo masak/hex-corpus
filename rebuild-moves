@@ -144,73 +144,42 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     }
 }
 
-my $I_500_MOVES = $dbh.prepare(
-    sprintf "INSERT INTO moves %s VALUES %s",
-        "(game_id, color_id, seq_no)",
-        ("(?, ?, ?)" xx 500).join(", "));
+sub insert($table, @spec, @items) {
+    constant LIMIT = 500;
 
-while @moves {
-    my @m = @moves.splice(0, 500);
-    my @args = @m.map({ .<game_id>, .<color_id>, .<seq_no> });
+    sub prepare($n) {
+        my $tuple = "(" ~ ('?' xx @spec).join(', ') ~ ")";
+        my $statement = sprintf "INSERT INTO $table %s VALUES %s",
+            "({@spec.join(', ')})",
+            ($tuple xx $n).join(", ");
+        $dbh.prepare($statement);
+    }
 
-    if @m == 500 {
-        $I_500_MOVES.execute(|@args);
+    sub args(@m) {
+        @m.map(-> $o { @spec.map(-> $p { $o{$p} }) });
+    }
+
+    if @items < LIMIT {
+        prepare(+@items).execute(|args(@items));
     }
     else {
-        my $insert_n = $dbh.prepare(
-            sprintf "INSERT INTO moves %s VALUES %s",
-                "(game_id, color_id, seq_no)",
-                ("(?, ?, ?)" xx @m).join(", "));
-        $insert_n.execute(|@args);
-    }
-}
- 
-my $I_500_PLACEMENTS = $dbh.prepare(
-    sprintf "INSERT INTO placements %s VALUES %s",
-        "(move_id, coord_id)",
-        ("(?, ?)" xx 500).join(", "));
-
-while @placements {
-    my @m = @placements.splice(0, 500);
-    my @args = @m.map({ .<move_id>, .<coord_id> });
-
-    if @m == 500 {
-        $I_500_PLACEMENTS.execute(|@args);
-    }
-    else {
-        my $insert_n = $dbh.prepare(
-            sprintf "INSERT INTO placements %s VALUES %s",
-                "(move_id, coord_id)",
-                ("(?, ?)" xx @m).join(", "));
-        $insert_n.execute(|@args);
+        my $I_LIMIT = prepare(LIMIT);
+        while @items {
+            my @m = @items.splice(0, LIMIT);
+            if @m == LIMIT {
+                $I_LIMIT.execute(|args(@m));
+            }
+            else {
+                prepare(+@m).execute(|args(@m));
+            }
+        }
     }
 }
 
-{
-    my $insert_n = $dbh.prepare(
-        sprintf "INSERT INTO swaps %s VALUES %s",
-            "(move_id, placement_id)",
-            ("(?, ?)" xx @swaps).join(", "));
-    my @args = @swaps.map({ .<move_id>, .<placement_id> });
-    $insert_n.execute(|@args);
-}
-
-{
-    my $insert_n = $dbh.prepare(
-        sprintf "INSERT INTO resigns %s VALUES %s",
-            "(move_id)",
-            ("(?)" xx @resigns).join(", "));
-    my @args = @resigns.map({ .<move_id> });
-    $insert_n.execute(|@args);
-}
-
-{
-    my $insert_n = $dbh.prepare(
-        sprintf "INSERT INTO timeouts %s VALUES %s",
-            "(move_id)",
-            ("(?)" xx @timeouts).join(", "));
-    my @args = @timeouts.map({ .<move_id> });
-    $insert_n.execute(|@args);
-}
+insert("moves", <game_id color_id seq_no>, @moves);
+insert("placements", <move_id coord_id>, @placements);
+insert("swaps", <move_id placement_id>, @swaps);
+insert("resigns", ('move_id',), @resigns);
+insert("timeouts", ('move_id',), @timeouts);
 
 $dbh.disconnect;

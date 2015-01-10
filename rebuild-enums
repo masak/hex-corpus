@@ -11,8 +11,8 @@ my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
 $dbh.do('DROP TABLE IF EXISTS colors');
 $dbh.do('CREATE TABLE colors (
     color_id INTEGER PRIMARY KEY,
-    opposite_color_id INTEGER,
-    name VARCHAR(20)
+    opposite_color_id INTEGER NOT NULL,
+    name VARCHAR(20) NOT NULL
 )');
 
 $dbh.do('INSERT INTO colors (opposite_color_id, name) VALUES
@@ -30,7 +30,7 @@ $dbh.do('INSERT INTO colors (opposite_color_id, name) VALUES
 $dbh.do('DROP TABLE IF EXISTS coords');
 $dbh.do('CREATE TABLE coords (
     coord_id INTEGER PRIMARY KEY,
-    name VARCHAR(3)
+    name VARCHAR(3) NOT NULL
 )');
 
 for 'a'..'m' X~ 1..13 {

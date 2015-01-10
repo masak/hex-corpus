@@ -13,10 +13,10 @@ $dbh.do('DROP TABLE IF EXISTS games');
 $dbh.do(q:to/./);
     CREATE TABLE games (
         game_id         INTEGER PRIMARY KEY,
-        name            VARCHAR(20),
-        was_swapped     INTEGER,
-        was_resigned    INTEGER,
-        was_timeout     INTEGER
+        name            VARCHAR(20) NOT NULL,
+        was_swapped     INTEGER NOT NULL,
+        was_resigned    INTEGER NOT NULL,
+        was_timeout     INTEGER NOT NULL
     )
     .
 

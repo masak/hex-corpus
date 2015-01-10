@@ -154,6 +154,23 @@ my $INSERT_2_MOVES = $dbh.prepare(q:to/./);
         VALUES (?, ?, ?), (?, ?, ?)
     .
 
+my $INSERT_4_MOVES = $dbh.prepare(q:to/./);
+    INSERT INTO moves (game_id, color_id, seq_no)
+        VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?)
+    .
+
+while @moves >= 4 {
+    my $m1 = @moves.shift;
+    my $m2 = @moves.shift;
+    my $m3 = @moves.shift;
+    my $m4 = @moves.shift;
+    $INSERT_4_MOVES.execute(
+        $m1<game_id>, $m1<color_id>, $m1<seq_no>,
+        $m2<game_id>, $m2<color_id>, $m2<seq_no>,
+        $m3<game_id>, $m3<color_id>, $m3<seq_no>,
+        $m4<game_id>, $m4<color_id>, $m4<seq_no>,
+    );
+}
 while @moves >= 2 {
     my $m1 = @moves.shift;
     my $m2 = @moves.shift;
@@ -179,6 +196,23 @@ my $INSERT_2_PLACEMENTS = $dbh.prepare(q:to/./);
         VALUES (?, ?), (?, ?)
     .
 
+my $INSERT_4_PLACEMENTS = $dbh.prepare(q:to/./);
+    INSERT INTO placements (move_id, coord_id)
+        VALUES (?, ?), (?, ?), (?, ?), (?, ?)
+    .
+
+while @placements >= 4 {
+    my $p1 = @placements.shift;
+    my $p2 = @placements.shift;
+    my $p3 = @placements.shift;
+    my $p4 = @placements.shift;
+    $INSERT_4_PLACEMENTS.execute(
+        $p1<move_id>, $p1<coord_id>,
+        $p2<move_id>, $p2<coord_id>,
+        $p3<move_id>, $p3<coord_id>,
+        $p4<move_id>, $p4<coord_id>,
+    );
+}
 while @placements >= 2 {
     my $p1 = @placements.shift;
     my $p2 = @placements.shift;

@@ -33,8 +33,39 @@ $dbh.do('CREATE TABLE coords (
     name VARCHAR(3) NOT NULL
 )');
 
-for 'a'..'m' X~ 1..13 {
-    $dbh.do(qq[INSERT INTO coords (name) VALUES ("$_")]);
+sub insert($table, @spec, @items) {
+    constant LIMIT = 500;
+
+    sub prepare($n) {
+        my $tuple = "(" ~ ('?' xx @spec).join(', ') ~ ")";
+        my $statement = sprintf "INSERT INTO $table %s VALUES %s",
+            "({@spec.join(', ')})",
+            ($tuple xx $n).join(", ");
+        $dbh.prepare($statement);
+    }
+
+    sub args(@m) {
+        @m.map(-> $o { @spec.map(-> $p { $o{$p} }) });
+    }
+
+    if @items < LIMIT {
+        prepare(+@items).execute(|args(@items));
+    }
+    else {
+        my $I_LIMIT = prepare(LIMIT);
+        while @items {
+            my @m = @items.splice(0, LIMIT);
+            if @m == LIMIT {
+                $I_LIMIT.execute(|args(@m));
+            }
+            else {
+                prepare(+@m).execute(|args(@m));
+            }
+        }
+    }
 }
+
+my @coords = ('a'..'m' X~ 1..13).map({ { :name($_) } });
+insert("coords", ('name',), @coords);
 
 $dbh.disconnect;

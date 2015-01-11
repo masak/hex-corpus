@@ -28,8 +28,10 @@ $dbh.do(q:to/./);
     )
     .
 
-my $tot = dir("mvm").elems + dir("hvm").elems + dir("hvh").elems;
+my @games;
+
 for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
+    my $name = "$path";
     my $was_resigned = 0;
     my $was_timeout = 0;
     my $was_swapped = 0;
@@ -50,10 +52,41 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
         die "Unknown input '$_'";
     }
 
-    $dbh.do(qq:to/./);
-        INSERT INTO games (name, was_swapped, was_resigned, was_timeout)
-            VALUES ("$path", $was_swapped, $was_resigned, $was_timeout)
-    .
+    @games.push: { :$name, :$was_swapped, :$was_resigned, :$was_timeout };
 }
+
+sub insert($table, @spec, @items) {
+    constant LIMIT = 500;
+
+    sub prepare($n) {
+        my $tuple = "(" ~ ('?' xx @spec).join(', ') ~ ")";
+        my $statement = sprintf "INSERT INTO $table %s VALUES %s",
+            "({@spec.join(', ')})",
+            ($tuple xx $n).join(", ");
+        $dbh.prepare($statement);
+    }
+
+    sub args(@m) {
+        @m.map(-> $o { @spec.map(-> $p { $o{$p} }) });
+    }
+
+    if @items < LIMIT {
+        prepare(+@items).execute(|args(@items));
+    }
+    else {
+        my $I_LIMIT = prepare(LIMIT);
+        while @items {
+            my @m = @items.splice(0, LIMIT);
+            if @m == LIMIT {
+                $I_LIMIT.execute(|args(@m));
+            }
+            else {
+                prepare(+@m).execute(|args(@m));
+            }
+        }
+    }
+}
+
+insert("games", <name was_swapped was_resigned was_timeout>, @games);
 
 $dbh.disconnect;

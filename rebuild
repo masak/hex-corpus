@@ -37,8 +37,10 @@ sub rebuild($job) {
     my $before = now;
     shell "perl6 $script"
         or conk "something wrong when running inferior script -- aborting";
-    my $after = now;
-    my $time = ($after - $before).fmt("%d s");
+    my $seconds = now - $before;
+    my $time = $seconds >= 60
+        ?? sprintf("%d m %.3f s", $seconds.Int div 60, $seconds % 60)
+        !! sprintf("%.3f s", $seconds);
     say "    (finished in $time)";
 }
 

@@ -3,13 +3,21 @@ use lib '.';
 use DBIish;
 my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
 
+$dbh.do('PRAGMA foreign_keys = ON');
+
 # games
 #
 # A game between two players, already concluded. All the properties on it are in the
 # past tense. A game was swapped if the second move was a swap move. A game was
 # resigned if the last move was a resign move. Otherwise, the game was timed out.
 
+$dbh.do('DROP TABLE IF EXISTS timeouts');
+$dbh.do('DROP TABLE IF EXISTS resigns');
+$dbh.do('DROP TABLE IF EXISTS swaps');
+$dbh.do('DROP TABLE IF EXISTS placements');
+$dbh.do('DROP TABLE IF EXISTS moves');
 $dbh.do('DROP TABLE IF EXISTS games');
+
 $dbh.do(q:to/./);
     CREATE TABLE games (
         game_id         INTEGER PRIMARY KEY,

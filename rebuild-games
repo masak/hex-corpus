@@ -10,6 +10,7 @@ $dbh.do('PRAGMA foreign_keys = ON');
 # A game between two players, already concluded. All the properties on it are in the
 # past tense. A game was swapped if the second move was a swap move. A game was
 # resigned if the last move was a resign move. Otherwise, the game was timed out.
+# The game was won by the person who did not make the last move.
 
 $dbh.do('DROP TABLE IF EXISTS timeouts');
 $dbh.do('DROP TABLE IF EXISTS resigns');
@@ -24,9 +25,13 @@ $dbh.do(q:to/./);
         name            VARCHAR(20) NOT NULL,
         was_swapped     INTEGER NOT NULL,
         was_resigned    INTEGER NOT NULL,
-        was_timeout     INTEGER NOT NULL
+        was_timeout     INTEGER NOT NULL,
+        winner          INTEGER NOT NULL,
+            FOREIGN KEY(winner) REFERENCES colors(color_id)
     )
     .
+
+enum Color <_ EMPTY WHITE BLACK>;
 
 my @games;
 
@@ -36,7 +41,10 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
     my $was_timeout = 0;
     my $was_swapped = 0;
 
-    for $path.IO.lines {
+    my @moves = $path.IO.lines;
+    my $winner = @moves % 2 ?? +BLACK !! +WHITE;
+
+    for @moves {
         when "Black swaps." {
             $was_swapped = 1;
         }
@@ -52,7 +60,7 @@ for dir("mvm"), dir("hvm"), dir("hvh") -> $path {
         die "Unknown input '$_'";
     }
 
-    @games.push: { :$name, :$was_swapped, :$was_resigned, :$was_timeout };
+    @games.push: { :$name, :$was_swapped, :$was_resigned, :$was_timeout, :$winner };
 }
 
 sub insert($table, @spec, @items) {
@@ -87,6 +95,6 @@ sub insert($table, @spec, @items) {
     }
 }
 
-insert("games", <name was_swapped was_resigned was_timeout>, @games);
+insert("games", <name was_swapped was_resigned was_timeout winner>, @games);
 
 $dbh.disconnect;

@@ -3,12 +3,21 @@ use lib '.';
 use DBIish;
 my $dbh = DBIish.connect("SQLite", :database<corpus.sqlite3>, :RaiseError);
 
+$dbh.do('PRAGMA foreign_keys = ON');
+
 # colors
 #
 # The possible states of a position on the board. A position can be either empty,
 # occupied by the white player, or occupied by the black player.
 
+$dbh.do('DROP TABLE IF EXISTS timeouts');
+$dbh.do('DROP TABLE IF EXISTS resigns');
+$dbh.do('DROP TABLE IF EXISTS swaps');
+$dbh.do('DROP TABLE IF EXISTS placements');
+$dbh.do('DROP TABLE IF EXISTS moves');
+$dbh.do('DROP TABLE IF EXISTS games');
 $dbh.do('DROP TABLE IF EXISTS colors');
+
 $dbh.do('CREATE TABLE colors (
     color_id INTEGER PRIMARY KEY,
     opposite_color_id INTEGER NOT NULL,

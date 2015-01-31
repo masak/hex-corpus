@@ -2,7 +2,6 @@ my @jobs = <
     enums
     games
     moves
-    chain-events
     chains
     link-events
     links

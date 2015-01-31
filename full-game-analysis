@@ -4,10 +4,19 @@ my %chains =
     "H" => {},
 ;
 
-sub show_board {
+sub show_board(@links) {
+    my %linkpos = @links.map: -> $l { "{$l.c1};{$l.c2}" => 1 };
     for ^13 -> $c1 {
         print " " x $c1;
-        print @board[$c1].join(" ");
+        for ^13 -> $c2 {
+            if %linkpos{"$c1;$c2"} {
+                print "!";
+            }
+            else {
+                print @board[$c1][$c2];
+            }
+            print " ";
+        }
         print "\n";
     }
     print "\n";
@@ -44,7 +53,7 @@ sub neighbors($c1, $c2) {
     @n.push([$c1, $c2 + 1])     if $c2 < 12;
     @n.push([$c1 + 1, $c2 - 1]) if $c1 < 12 && $c2 > 0;
     @n.push([$c1 + 1, $c2])     if $c1 < 12;
-    @n;
+    return @n;
 }
 
 my %next_chain_name =
@@ -83,6 +92,41 @@ sub show_chains {
     }
 }
 
+class Link {
+    has Int $.c1;
+    has Int $.c2;
+    has Str $.color;
+    has Str @.chains;
+}
+
+sub find_links {
+    my @links;
+    for ^13 -> $c1 {
+        for ^13 -> $c2 {
+            next unless '.' eq @board[$c1][$c2];
+            for "V", "H" -> $color {
+                my @n = neighbors($c1, $c2);
+                sub desired_color([$d1, $d2]) { $color eq @board[$d1][$d2] };
+                my @dc = @n.grep: &desired_color;
+                my @chains = @dc.map(&chain).sort.squish;
+                die "found a trilink at [$c1, $c2]!"
+                    if @chains > 2;
+                next unless @chains == 2;
+                push @links, Link.new(:$c1, :$c2, :$color, :@chains);
+            }
+        }
+    }
+    return @links;
+}
+
+sub show_links(@links) {
+    for @links.sort(*.chains[1]).sort(*.chains[0]) -> $link {
+        my $coord = chr(ord('a') + $link.c2) ~ ($link.c1 + 1);
+        say "$coord linking together $link.chains()[0] and $link.chains()[1]";
+    }
+    say "" if @links;
+}
+
 given open("hvh/146681") -> $fh {
     for $fh.lines {
         .say;
@@ -98,7 +142,6 @@ given open("hvh/146681") -> $fh {
             my $c2 = ord($column) - ord("a");
 
             @board[$c1][$c2] = $color;
-            show_board;
 
             die "piece near an edge"
                 if $color eq "V" && $c1 == 0 | 12;
@@ -115,8 +158,14 @@ given open("hvh/146681") -> $fh {
             else {
                 join_chains($color, @n, [$c1, $c2]);
             }
+            my @links = find_links;
+            show_board(@links);
+
             show_chains;
+
+            show_links(@links);
         }
+
         when /^ (White|Black) ' resigns.' $/ {
             say "Game over.";
             exit;

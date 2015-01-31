@@ -1,0 +1,126 @@
+my @board = ['.' xx 13] xx 13;
+my %chains =
+    "V" => {},
+    "H" => {},
+;
+
+sub show_board {
+    for ^13 -> $c1 {
+        print " " x $c1;
+        print @board[$c1].join(" ");
+        print "\n";
+    }
+    print "\n";
+}
+
+sub chain([$c1, $c2]) {
+    my $color = @board[$c1][$c2];
+    for %chains{$color}.kv -> $name, @coords {
+        for @coords -> [$d1, $d2] {
+            return $name
+                if [$c1, $c2] eqv [$d1, $d2];
+        }
+    }
+}
+
+sub pal_chains($c1, $c2) {
+    my @n = neighbors($c1, $c2);
+    my $color = @board[$c1][$c2];
+    sub same_color([$d1, $d2]) { $color eq @board[$d1][$d2] };
+    my @sc = @n.grep: &same_color;
+    my @chains = @sc.map: &chain;
+    return @chains.unique;
+}
+
+sub neighbors($c1, $c2) {
+    # . X X
+    #  X . X
+    #   X X .
+
+    my @n;
+    @n.push([$c1 - 1, $c2])     if $c1 > 0;
+    @n.push([$c1 - 1, $c2 + 1]) if $c1 > 0 && $c2 < 12;
+    @n.push([$c1, $c2 - 1])     if $c2 > 0;
+    @n.push([$c1, $c2 + 1])     if $c2 < 12;
+    @n.push([$c1 + 1, $c2 - 1]) if $c1 < 12 && $c2 > 0;
+    @n.push([$c1 + 1, $c2])     if $c1 < 12;
+    @n;
+}
+
+my %next_chain_name =
+    "V" => "Cv01",
+    "H" => "Ch01",
+;
+
+sub seed_chain($color, $coords [$, $]) {
+    my $name = %next_chain_name{$color}++;
+    %chains{$color}{$name} = [$coords];
+}
+
+sub grow_chain($color, $name, $coords [$, $]) {
+    %chains{$color}{$name}.push($coords);
+}
+
+sub join_chains($color, @names, $coords [$, $]) {
+    my @coords = @names.map: { %chains{$color}{$_}.list };
+    for @names -> $name {
+        %chains{$color}{$name} :delete;
+    }
+    @coords.push($coords);
+    my $name = %next_chain_name{$color}++;
+    %chains{$color}{$name} = @coords;
+}
+
+sub show_chains {
+    for "V", "H" -> $color {
+        for %chains{$color}.keys.sort -> $name {
+            my $chain = join " ", map -> [$c1, $c2] {
+                chr(ord('a') + $c2) ~ ($c1 + 1)
+            }, %chains{$color}{$name}.list;
+            say "$name: <$chain>";
+        }
+        say "";
+    }
+}
+
+given open("hvh/146681") -> $fh {
+    for $fh.lines {
+        .say;
+        say "";
+
+        when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+            my $player = ~$0;
+            my $column = ~$1;
+            my $row = ~$2;
+
+            my $color = $player eq "White" ?? "V" !! "H";
+            my $c1 = $row - 1;
+            my $c2 = ord($column) - ord("a");
+
+            @board[$c1][$c2] = $color;
+            show_board;
+
+            die "piece near an edge"
+                if $color eq "V" && $c1 == 0 | 12;
+            die "piece near an edge"
+                if $color eq "H" && $c2 == 0 | 12;
+
+            my @n = pal_chains($c1, $c2);
+            if @n == 0 {
+                seed_chain($color, [$c1, $c2]);
+            }
+            elsif @n == 1 {
+                grow_chain($color, @n[0], [$c1, $c2]);
+            }
+            else {
+                join_chains($color, @n, [$c1, $c2]);
+            }
+            show_chains;
+        }
+        when /^ (White|Black) ' resigns.' $/ {
+            say "Game over.";
+            exit;
+        }
+        die "could not match $_";
+    }
+}

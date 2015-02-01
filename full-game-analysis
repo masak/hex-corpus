@@ -81,12 +81,13 @@ sub join_chains($color, @names, $coords [$, $]) {
 }
 
 sub show_chains {
+    say "Chains:";
     for "V", "H" -> $color {
         for %chains{$color}.keys.sort -> $name {
             my $chain = join " ", map -> [$c1, $c2] {
                 chr(ord('a') + $c2) ~ ($c1 + 1)
             }, %chains{$color}{$name}.list;
-            say "$name: <$chain>";
+            say "  $name: <$chain>";
         }
         say "";
     }
@@ -120,11 +121,21 @@ sub find_links {
 }
 
 sub show_links(@links) {
-    for @links.sort(*.chains[1]).sort(*.chains[0]) -> $link {
-        my $coord = chr(ord('a') + $link.c2) ~ ($link.c1 + 1);
-        say "$coord linking together $link.chains()[0] and $link.chains()[1]";
+    return unless @links;
+
+    say "Links:";
+    for "V", "H" -> $color {
+        for @links.grep(*.color eq $color)\
+                  .sort(*.chains[1]).sort(*.chains[0])\
+                  .classify(*.chains.join).values
+        -> @l {
+            my $ch1 = @l[0].chains[0];
+            my $ch2 = @l[0].chains[1];
+            sub coord($link) { chr(ord('a') + $link.c2) ~ ($link.c1 + 1) };
+            say "  $ch1 + $ch2: <{@l.map(&coord).join(" ")}>";
+        }
+        say "";
     }
-    say "" if @links;
 }
 
 given open("hvh/146681") -> $fh {

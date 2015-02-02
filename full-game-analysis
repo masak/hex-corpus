@@ -5,7 +5,25 @@ my %chains =
 ;
 
 sub show_board(@links, $lastmove [$l1, $l2]) {
-    my %linkpos = @links.map: -> $l { "{$l.c1};{$l.c2}" => 1 };
+    my %linkpos;
+    my $next_unique_letter = "a";
+    for "V", "H" -> $color {
+        for @links.grep(*.color eq $color)\
+                  .sort(*.chains[1]).sort(*.chains[0])\
+                  .classify(*.chains.join).values
+        -> @l {
+            my $letter = $next_unique_letter++;
+            for @l -> $link {
+                if %linkpos{"$link.c1();$link.c2()"} :exists {
+                    %linkpos{"$link.c1();$link.c2()"} = "!";
+                }
+                else {
+                    %linkpos{"$link.c1();$link.c2()"} = $letter;
+                }
+            }
+        }
+        say "";
+    }
     sub space($c1, $c2) {
         [$c1, $c2] eqv [$l1, $l2]   ?? "<" !!
         [$c1, $c2] eqv [$l1, $l2+1] ?? ">" !! " ";
@@ -14,7 +32,7 @@ sub show_board(@links, $lastmove [$l1, $l2]) {
         print " " x $c1, space($c1, 0);
         for ^13 -> $c2 {
             if %linkpos{"$c1;$c2"} {
-                print "!";
+                print %linkpos{"$c1;$c2"};
             }
             else {
                 print @board[$c1][$c2];
@@ -128,15 +146,17 @@ sub show_links(@links) {
     return unless @links;
 
     say "Links:";
+    my $next_unique_letter = "a";
     for "V", "H" -> $color {
         for @links.grep(*.color eq $color)\
                   .sort(*.chains[1]).sort(*.chains[0])\
                   .classify(*.chains.join).values
         -> @l {
+            my $letter = $next_unique_letter++;
             my $ch1 = @l[0].chains[0];
             my $ch2 = @l[0].chains[1];
             sub coord($link) { chr(ord('a') + $link.c2) ~ ($link.c1 + 1) };
-            say "  $ch1 + $ch2: <{@l.map(&coord).join(" ")}>";
+            say "  ($letter) $ch1 + $ch2: <{@l.map(&coord).join(" ")}>";
         }
         say "";
     }

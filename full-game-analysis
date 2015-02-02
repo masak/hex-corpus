@@ -4,10 +4,14 @@ my %chains =
     "H" => {},
 ;
 
-sub show_board(@links) {
+sub show_board(@links, $lastmove [$l1, $l2]) {
     my %linkpos = @links.map: -> $l { "{$l.c1};{$l.c2}" => 1 };
+    sub space($c1, $c2) {
+        [$c1, $c2] eqv [$l1, $l2]   ?? "<" !!
+        [$c1, $c2] eqv [$l1, $l2+1] ?? ">" !! " ";
+    }
     for ^13 -> $c1 {
-        print " " x $c1;
+        print " " x $c1, space($c1, 0);
         for ^13 -> $c2 {
             if %linkpos{"$c1;$c2"} {
                 print "!";
@@ -15,7 +19,7 @@ sub show_board(@links) {
             else {
                 print @board[$c1][$c2];
             }
-            print " ";
+            print space($c1, $c2 + 1);
         }
         print "\n";
     }
@@ -170,7 +174,7 @@ given open("hvh/466470") -> $fh {
                 join_chains($color, @n, [$c1, $c2]);
             }
             my @links = find_links;
-            show_board(@links);
+            show_board(@links, [$c1, $c2]);
 
             show_chains;
 

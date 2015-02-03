@@ -22,7 +22,6 @@ sub show_board(@links, $lastmove [$l1, $l2]) {
                 }
             }
         }
-        say "";
     }
     sub space($c1, $c2) {
         [$c1, $c2] eqv [$l1, $l2]   ?? "<" !!

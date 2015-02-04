@@ -161,6 +161,10 @@ sub show_links(@links) {
     }
 }
 
+sub find_snags(@links) {
+    @links.classify(-> $l { "$l.color();$l.c1();$l.c2()" }).grep(*.value.elems > 1);
+}
+
 given open("hvh/466470") -> $fh {
     for $fh.lines {
         .say;
@@ -196,6 +200,11 @@ given open("hvh/466470") -> $fh {
             show_board(@links, [$c1, $c2]);
 
             show_chains;
+
+            if find_snags(@links) -> @snags {
+                say "Found snags: ({@snags.perl})";
+                next;
+            }
 
             show_links(@links);
         }

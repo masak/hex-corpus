@@ -130,11 +130,16 @@ sub find_links {
                 my @n = neighbors($c1, $c2);
                 sub desired_color([$d1, $d2]) { $color eq @board[$d1][$d2] };
                 my @dc = @n.grep: &desired_color;
-                my @chains = @dc.map(&chain).sort.squish;
-                die "found a trilink at [$c1, $c2]!"
-                    if @chains > 2;
-                next unless @chains == 2;
-                push @links, Link.new(:$c1, :$c2, :$color, :@chains);
+                my @nchains = @dc.map(&chain).sort.squish;
+                die "this really shouldn't happen: found a quadlink at [$c1, $c2]!"
+                    if @nchains >= 4;
+                for @nchains -> $ch1 {
+                    for @nchains -> $ch2 {
+                        next if $ch2 le $ch1;
+                        my @chains = $ch1, $ch2;
+                        push @links, Link.new(:$c1, :$c2, :$color, :@chains);
+                    }
+                }
             }
         }
     }

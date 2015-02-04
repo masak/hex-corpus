@@ -167,7 +167,7 @@ sub show_links(@links) {
 }
 
 sub find_snags(@links) {
-    @links.classify(-> $l { "$l.color();$l.c1();$l.c2()" }).grep(*.value.elems > 1);
+    @links.classify(-> $l { "$l.color();$l.c1();$l.c2()" }).grep(*.value.elems > 1)».key;
 }
 
 sub MAIN($game = "hvh/466470") {

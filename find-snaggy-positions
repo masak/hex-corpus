@@ -1,0 +1,179 @@
+sub number-of-moves($file) {
+    given open($file) {
+        my $n = +.lines;
+        .close;
+        return $n;
+    }
+}
+
+my @input-files = qx[find mvm hvm hvh -type f].lines;
+my @sorted-input-files = @input-files.sort(&number-of-moves);
+
+for @sorted-input-files -> $file {
+    print $file.fmt("%-12s  ");
+
+    my @board = ['.' xx 13] xx 13;
+    my %chains =
+        "V" => {},
+        "H" => {},
+    ;
+
+    sub chain([$c1, $c2]) {
+        my $color = @board[$c1][$c2];
+        for %chains{$color}.kv -> $name, @coords {
+            for @coords -> [$d1, $d2] {
+                return $name
+                    if [$c1, $c2] eqv [$d1, $d2];
+            }
+        }
+    }
+
+    sub pal_chains($c1, $c2) {
+        my @n = neighbors($c1, $c2);
+        my $color = @board[$c1][$c2];
+        sub same_color([$d1, $d2]) { $color eq @board[$d1][$d2] };
+        my @sc = @n.grep: &same_color;
+        my @chains = @sc.map: &chain;
+        return @chains.unique;
+    }
+
+    sub neighbors($c1, $c2) {
+        # . X X
+        #  X . X
+        #   X X .
+
+        my @n;
+        @n.push([$c1 - 1, $c2])     if $c1 > 0;
+        @n.push([$c1 - 1, $c2 + 1]) if $c1 > 0 && $c2 < 12;
+        @n.push([$c1, $c2 - 1])     if $c2 > 0;
+        @n.push([$c1, $c2 + 1])     if $c2 < 12;
+        @n.push([$c1 + 1, $c2 - 1]) if $c1 < 12 && $c2 > 0;
+        @n.push([$c1 + 1, $c2])     if $c1 < 12;
+        return @n;
+    }
+
+    my %next_chain_name =
+        "V" => "Cv01",
+        "H" => "Ch01",
+    ;
+
+    sub seed_chain($color, $coords [$, $]) {
+        my $name = %next_chain_name{$color}++;
+        %chains{$color}{$name} = [$coords];
+    }
+
+    sub grow_chain($color, $name, $coords [$, $]) {
+        %chains{$color}{$name}.push($coords);
+    }
+
+    sub join_chains($color, @names, $coords [$, $]) {
+        my @coords = @names.map: { %chains{$color}{$_}.list };
+        for @names -> $name {
+            %chains{$color}{$name} :delete;
+        }
+        @coords.push($coords);
+        my $name = %next_chain_name{$color}++;
+        %chains{$color}{$name} = @coords;
+    }
+
+    class Link {
+        has Int $.c1;
+        has Int $.c2;
+        has Str $.color;
+        has Str @.chains;
+    }
+
+    sub find_links {
+        my @links;
+        for ^13 -> $c1 {
+            for ^13 -> $c2 {
+                next unless '.' eq @board[$c1][$c2];
+                for "V", "H" -> $color {
+                    my @n = neighbors($c1, $c2);
+                    sub desired_color([$d1, $d2]) { $color eq @board[$d1][$d2] };
+                    my @dc = @n.grep: &desired_color;
+                    my @nchains = @dc.map(&chain).sort.squish;
+                    die "this really shouldn't happen: found a quadlink at [$c1, $c2]!"
+                        if @nchains >= 4;
+                    for @nchains -> $ch1 {
+                        for @nchains -> $ch2 {
+                            next if $ch2 le $ch1;
+                            my @chains = $ch1, $ch2;
+                            push @links, Link.new(:$c1, :$c2, :$color, :@chains);
+                        }
+                    }
+                }
+            }
+        }
+        return @links;
+    }
+
+    sub find_snags(@links) {
+        @links.classify(-> $l { "$l.color();$l.c1();$l.c2()" }).grep(*.value.elems > 1)».key;
+    }
+
+    given open($file) -> $fh {
+        my &swap_coords = -> { die "swap_coords called before first move"; };
+        my $snag;
+
+        sub process_new_move(Int $c1, Int $c2, Str $color) {
+            @board[$c1][$c2] = $color;
+            &swap_coords = -> { $c2, $c1 };
+
+            my @n = pal_chains($c1, $c2);
+            if @n == 0 {
+                seed_chain($color, [$c1, $c2]);
+            }
+            elsif @n == 1 {
+                grow_chain($color, @n[0], [$c1, $c2]);
+            }
+            else {
+                join_chains($color, @n, [$c1, $c2]);
+            }
+            my @links = find_links;
+
+            if find_snags(@links) -> @snags {
+                $snag = True;
+                return;
+            }
+        }
+
+        for $fh.lines {
+            $snag = False;
+
+            when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+                my $player = ~$0;
+                my $column = ~$1;
+                my $row = ~$2;
+
+                my $color = $player eq "White" ?? "V" !! "H";
+                my $c1 = $row - 1;
+                my $c2 = ord($column) - ord("a");
+
+                process_new_move($c1, $c2, $color);
+            }
+
+            when /^ 'Black swaps.' $/ {
+                my $color = "H";
+                my ($c1, $c2) = swap_coords;
+
+                @board = ['.' xx 13] xx 13;
+                process_new_move($c1, $c2, $color);
+            }
+
+            when /^ (White|Black) ' resigns.' $/ {
+                # do nothing; we're done
+            }
+
+            when /^ (White|Black) ' times out.' $/ {
+                # do nothing; we're done
+            }
+
+            die "could not match '$_'";
+
+            NEXT { print $snag ?? 'x' !! '.' }
+        }
+    }
+
+    print "\n";
+}

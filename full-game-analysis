@@ -172,6 +172,41 @@ sub find_snags(@links) {
 
 sub MAIN($game = "hvh/466470") {
     given open($game) -> $fh {
+        my &swap_coords = -> { die "swap_coords called before first move"; };
+
+        sub process_new_move(Int $c1, Int $c2, Str $color) {
+            die "piece near an edge"
+                if $color eq "V" && $c1 == 0 | 12;
+            die "piece near an edge"
+                if $color eq "H" && $c2 == 0 | 12;
+
+            @board[$c1][$c2] = $color;
+            &swap_coords = -> { $c2, $c1 };
+
+            my @n = pal_chains($c1, $c2);
+            if @n == 0 {
+                seed_chain($color, [$c1, $c2]);
+            }
+            elsif @n == 1 {
+                grow_chain($color, @n[0], [$c1, $c2]);
+            }
+            else {
+                join_chains($color, @n, [$c1, $c2]);
+            }
+            my @links = find_links;
+            show_board(@links, [$c1, $c2]);
+
+            show_chains;
+
+            if find_snags(@links) -> @snags {
+                say "Found snags: ({@snags.join(" ")})";
+                say "";
+                return;
+            }
+
+            show_links(@links);
+        }
+
         for $fh.lines {
             .say;
             say "";
@@ -185,34 +220,15 @@ sub MAIN($game = "hvh/466470") {
                 my $c1 = $row - 1;
                 my $c2 = ord($column) - ord("a");
 
-                @board[$c1][$c2] = $color;
+                process_new_move($c1, $c2, $color);
+            }
 
-                die "piece near an edge"
-                    if $color eq "V" && $c1 == 0 | 12;
-                die "piece near an edge"
-                    if $color eq "H" && $c2 == 0 | 12;
+            when /^ 'Black swaps.' $/ {
+                my $color = "H";
+                my ($c1, $c2) = swap_coords;
 
-                my @n = pal_chains($c1, $c2);
-                if @n == 0 {
-                    seed_chain($color, [$c1, $c2]);
-                }
-                elsif @n == 1 {
-                    grow_chain($color, @n[0], [$c1, $c2]);
-                }
-                else {
-                    join_chains($color, @n, [$c1, $c2]);
-                }
-                my @links = find_links;
-                show_board(@links, [$c1, $c2]);
-
-                show_chains;
-
-                if find_snags(@links) -> @snags {
-                    say "Found snags: ({@snags.perl})";
-                    next;
-                }
-
-                show_links(@links);
+                @board = ['.' xx 13] xx 13;
+                process_new_move($c1, $c2, $color);
             }
 
             when /^ (White|Black) ' resigns.' $/ {

@@ -213,6 +213,12 @@ given open("hvh/466470") -> $fh {
             say "Game over.";
             exit;
         }
+
+        when /^ (White|Black) ' times out.' $/ {
+            say "Game over.";
+            exit;
+        }
+
         die "could not match $_";
     }
 }

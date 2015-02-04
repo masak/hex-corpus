@@ -165,60 +165,62 @@ sub find_snags(@links) {
     @links.classify(-> $l { "$l.color();$l.c1();$l.c2()" }).grep(*.value.elems > 1);
 }
 
-given open("hvh/466470") -> $fh {
-    for $fh.lines {
-        .say;
-        say "";
+sub MAIN($game = "hvh/466470") {
+    given open($game) -> $fh {
+        for $fh.lines {
+            .say;
+            say "";
 
-        when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
-            my $player = ~$0;
-            my $column = ~$1;
-            my $row = ~$2;
+            when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+                my $player = ~$0;
+                my $column = ~$1;
+                my $row = ~$2;
 
-            my $color = $player eq "White" ?? "V" !! "H";
-            my $c1 = $row - 1;
-            my $c2 = ord($column) - ord("a");
+                my $color = $player eq "White" ?? "V" !! "H";
+                my $c1 = $row - 1;
+                my $c2 = ord($column) - ord("a");
 
-            @board[$c1][$c2] = $color;
+                @board[$c1][$c2] = $color;
 
-            die "piece near an edge"
-                if $color eq "V" && $c1 == 0 | 12;
-            die "piece near an edge"
-                if $color eq "H" && $c2 == 0 | 12;
+                die "piece near an edge"
+                    if $color eq "V" && $c1 == 0 | 12;
+                die "piece near an edge"
+                    if $color eq "H" && $c2 == 0 | 12;
 
-            my @n = pal_chains($c1, $c2);
-            if @n == 0 {
-                seed_chain($color, [$c1, $c2]);
+                my @n = pal_chains($c1, $c2);
+                if @n == 0 {
+                    seed_chain($color, [$c1, $c2]);
+                }
+                elsif @n == 1 {
+                    grow_chain($color, @n[0], [$c1, $c2]);
+                }
+                else {
+                    join_chains($color, @n, [$c1, $c2]);
+                }
+                my @links = find_links;
+                show_board(@links, [$c1, $c2]);
+
+                show_chains;
+
+                if find_snags(@links) -> @snags {
+                    say "Found snags: ({@snags.perl})";
+                    next;
+                }
+
+                show_links(@links);
             }
-            elsif @n == 1 {
-                grow_chain($color, @n[0], [$c1, $c2]);
-            }
-            else {
-                join_chains($color, @n, [$c1, $c2]);
-            }
-            my @links = find_links;
-            show_board(@links, [$c1, $c2]);
 
-            show_chains;
-
-            if find_snags(@links) -> @snags {
-                say "Found snags: ({@snags.perl})";
-                next;
+            when /^ (White|Black) ' resigns.' $/ {
+                say "Game over.";
+                exit;
             }
 
-            show_links(@links);
+            when /^ (White|Black) ' times out.' $/ {
+                say "Game over.";
+                exit;
+            }
+
+            die "could not match $_";
         }
-
-        when /^ (White|Black) ' resigns.' $/ {
-            say "Game over.";
-            exit;
-        }
-
-        when /^ (White|Black) ' times out.' $/ {
-            say "Game over.";
-            exit;
-        }
-
-        die "could not match $_";
     }
 }

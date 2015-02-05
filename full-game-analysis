@@ -25,12 +25,7 @@ sub show_board(@links, $lastmove [$l1, $l2]) {
     my %linkpos;
     for @links -> $link {
         my $pos = "$link.c1();$link.c2()";
-        if %linkpos{$pos} :exists {
-            %linkpos{$pos} = "!";
-        }
-        else {
-            %linkpos{$pos} = ":";
-        }
+        %linkpos{$pos} ~= $link.color.lc;
     }
     sub space($c1, $c2) {
         [$c1, $c2] eqv [$l1, $l2]   ?? "<" !!
@@ -45,7 +40,16 @@ sub show_board(@links, $lastmove [$l1, $l2]) {
         print " " x 6, space($c1, 1);
         for 1..13 -> $c2 {
             if %linkpos{"$c1;$c2"} {
-                print %linkpos{"$c1;$c2"};
+                my $colors = %linkpos{"$c1;$c2"};
+                if $colors ~~ /v/ & /h/ {
+                    print "!";
+                }
+                elsif $colors.chars > 1 {
+                    print "?";
+                }
+                else {
+                    print $colors;
+                }
             }
             else {
                 print @board[$c1][$c2] eq "." ?? "." !!

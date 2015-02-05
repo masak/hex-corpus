@@ -23,19 +23,13 @@ reset_chains;
 
 sub show_board(@links, $lastmove [$l1, $l2]) {
     my %linkpos;
-    for "V", "H" -> $color {
-        for @links.grep(*.color eq $color)\
-                  .sort(*.chains[1]).sort(*.chains[0])\
-                  .classify(*.chains.join).values
-        -> @l {
-            for @l -> $link {
-                if %linkpos{"$link.c1();$link.c2()"} :exists {
-                    %linkpos{"$link.c1();$link.c2()"} = "!";
-                }
-                else {
-                    %linkpos{"$link.c1();$link.c2()"} = ":";
-                }
-            }
+    for @links -> $link {
+        my $pos = "$link.c1();$link.c2()";
+        if %linkpos{$pos} :exists {
+            %linkpos{$pos} = "!";
+        }
+        else {
+            %linkpos{$pos} = ":";
         }
     }
     sub space($c1, $c2) {

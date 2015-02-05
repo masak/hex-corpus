@@ -1,8 +1,25 @@
-my @board = ['.' xx 13] xx 13;
-my %chains =
-    "V" => {},
-    "H" => {},
-;
+my @board;
+sub reset_board {
+    @board = ['.' xx 15] xx 15;
+    for 1..13 -> $c2 { @board[0][$c2] = "V"; @board[14][$c2] = "V" }
+    for 1..13 -> $c1 { @board[$c1][0] = "H"; @board[$c1][14] = "H" }
+}
+reset_board;
+
+my %chains;
+sub reset_chains {
+    %chains =
+        "V" => {
+            "Cv!U" => (1..13).map(-> $c2 { [0, $c2] }),
+            "Cv!D" => (1..13).map(-> $c2 { [14, $c2] }),
+        },
+        "H" => {
+            "Ch!L" => (1..13).map(-> $c1 { [$c1, 0] }),
+            "Ch!R" => (1..13).map(-> $c1 { [$c1, 14] }),
+        },
+    ;
+}
+reset_chains;
 
 sub show_board(@links, $lastmove [$l1, $l2]) {
     my %linkpos;
@@ -27,9 +44,9 @@ sub show_board(@links, $lastmove [$l1, $l2]) {
         [$c1, $c2] eqv [$l1, $l2]   ?? "<" !!
         [$c1, $c2] eqv [$l1, $l2+1] ?? ">" !! " ";
     }
-    for ^13 -> $c1 {
-        print " " x $c1, space($c1, 0);
-        for ^13 -> $c2 {
+    for 1..13 -> $c1 {
+        print " " x ($c1 - 1), space($c1, 1);
+        for 1..13 -> $c2 {
             if %linkpos{"$c1;$c2"} {
                 print %linkpos{"$c1;$c2"};
             }
@@ -69,11 +86,11 @@ sub neighbors($c1, $c2) {
 
     my @n;
     @n.push([$c1 - 1, $c2])     if $c1 > 0;
-    @n.push([$c1 - 1, $c2 + 1]) if $c1 > 0 && $c2 < 12;
+    @n.push([$c1 - 1, $c2 + 1]) if $c1 > 0 && $c2 < 14;
     @n.push([$c1, $c2 - 1])     if $c2 > 0;
-    @n.push([$c1, $c2 + 1])     if $c2 < 12;
-    @n.push([$c1 + 1, $c2 - 1]) if $c1 < 12 && $c2 > 0;
-    @n.push([$c1 + 1, $c2])     if $c1 < 12;
+    @n.push([$c1, $c2 + 1])     if $c2 < 14;
+    @n.push([$c1 + 1, $c2 - 1]) if $c1 < 14 && $c2 > 0;
+    @n.push([$c1 + 1, $c2])     if $c1 < 14;
     return @n;
 }
 
@@ -105,10 +122,20 @@ sub show_chains {
     say "Chains:";
     for "V", "H" -> $color {
         for %chains{$color}.keys.sort -> $name {
+            my @coords = %chains{$color}{$name}.list;
+            if $name ~~ /'!'/ {
+                @coords.splice(0, 13);
+            }
             my $chain = join " ", map -> [$c1, $c2] {
-                chr(ord('a') + $c2) ~ ($c1 + 1)
+                chr(ord('a') + $c2 - 1) ~ $c1
             }, %chains{$color}{$name}.list;
-            say "  $name: <$chain>";
+            if $name ~~ /'!'/ {
+                say "  $name: (edge)",
+                    @coords ?? " + <$chain>" !! "";
+            }
+            else {
+                say "  $name: <$chain>";
+            }
         }
         say "";
     }
@@ -123,8 +150,8 @@ class Link {
 
 sub find_links {
     my @links;
-    for ^13 -> $c1 {
-        for ^13 -> $c2 {
+    for 1..13 -> $c1 {
+        for 1..13 -> $c2 {
             next unless '.' eq @board[$c1][$c2];
             for "V", "H" -> $color {
                 my @n = neighbors($c1, $c2);
@@ -159,7 +186,7 @@ sub show_links(@links) {
             my $letter = $next_unique_letter++;
             my $ch1 = @l[0].chains[0];
             my $ch2 = @l[0].chains[1];
-            sub coord($link) { chr(ord('a') + $link.c2) ~ ($link.c1 + 1) };
+            sub coord($link) { chr(ord('a') + $link.c2 - 1) ~ $link.c1 };
             say "  ($letter) $ch1 + $ch2: <{@l.map(&coord).join(" ")}>";
         }
         say "";
@@ -175,11 +202,6 @@ sub MAIN($game = "hvh/466470") {
         my &swap_coords = -> { die "swap_coords called before first move"; };
 
         sub process_new_move(Int $c1, Int $c2, Str $color) {
-            die "piece near an edge"
-                if $color eq "V" && $c1 == 0 | 12;
-            die "piece near an edge"
-                if $color eq "H" && $c2 == 0 | 12;
-
             @board[$c1][$c2] = $color;
             &swap_coords = -> { $c2, $c1 };
 
@@ -217,8 +239,8 @@ sub MAIN($game = "hvh/466470") {
                 my $row = ~$2;
 
                 my $color = $player eq "White" ?? "V" !! "H";
-                my $c1 = $row - 1;
-                my $c2 = ord($column) - ord("a");
+                my $c1 = +$row;
+                my $c2 = ord($column) - ord("a") + 1;
 
                 process_new_move($c1, $c2, $color);
             }
@@ -227,7 +249,9 @@ sub MAIN($game = "hvh/466470") {
                 my $color = "H";
                 my ($c1, $c2) = swap_coords;
 
-                @board = ['.' xx 13] xx 13;
+                reset_board;
+                reset_chains;
+
                 process_new_move($c1, $c2, $color);
             }
 

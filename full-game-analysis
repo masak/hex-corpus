@@ -233,12 +233,10 @@ sub MAIN($game = "hvh/466470") {
 
             when /^ (White|Black) ' resigns.' $/ {
                 say "Game over.";
-                exit;
             }
 
             when /^ (White|Black) ' times out.' $/ {
                 say "Game over.";
-                exit;
             }
 
             die "could not match $_";

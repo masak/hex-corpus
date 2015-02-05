@@ -118,7 +118,11 @@ sub join_chains($color, @names, $coords [$, $]) {
         %chains{$color}{$name} :delete;
     }
     @coords.push($coords);
-    my $name = @names.first({ .substr(2, 1) eq "!" }) // %next_chain_name{$color}++;
+    sub edge_chain($name) { $name.substr(2, 1) eq "!" }
+    my $name = @names.first(&edge_chain) // %next_chain_name{$color}++;
+    if @names.grep(&edge_chain) == 2 {
+        $name = @names[0].substr(0, 2) ~ "!W";
+    }
     %chains{$color}{$name} = @coords;
 }
 

@@ -118,7 +118,7 @@ sub join_chains($color, @names, $coords [$, $]) {
         %chains{$color}{$name} :delete;
     }
     @coords.push($coords);
-    my $name = %next_chain_name{$color}++;
+    my $name = @names.first({ .substr(2, 1) eq "!" }) // %next_chain_name{$color}++;
     %chains{$color}{$name} = @coords;
 }
 

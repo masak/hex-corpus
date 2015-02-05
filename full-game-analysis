@@ -160,6 +160,80 @@ sub find_snags(@links) {
     @links.classify(-> $l { "$l.color();$l.c1();$l.c2()" }).grep(*.value.elems > 1)».key;
 }
 
+sub compute_groups(@links) {
+    my %groups =
+        "V" => {},
+        "H" => {}
+    ;
+    for "V", "H" -> $color {
+        for %chains{$color}.keys -> $name {
+            my $groupname = $name.subst(/^C/, "G");
+            %groups{$color}{$groupname} = [$name];
+        }
+    }
+    for "V", "H" -> $color {
+        COMBINE_ATTEMPT:
+        loop {
+            my %inv;
+            for %groups{$color}.kv -> $group, @chains {
+                for @chains -> $chain {
+                    %inv{$chain} = $group;
+                }
+            }
+
+            my %conn;
+            for @links.grep(*.color eq $color) -> $link {
+                my ($ch1, $ch2) = $link.chains.list;
+                next if %inv{$ch1} eq %inv{$ch2};
+                %conn{"$ch1;$ch2"}++;
+            }
+            my $conn = %conn.pairs.first(*.value > 1)
+                or last COMBINE_ATTEMPT;
+
+            my $name = $conn.key;
+            my ($g1, $g2) = $name.split(";").map({ %inv{$_} });
+            my @fragments = (.substr(2).comb(/../) for $g1, $g2);
+            my $new_name = "G" ~ $color.lc ~ @fragments.sort.join;
+            my @chains_g1 = %groups{$color}{$g1}.list;
+            my @chains_g2 = %groups{$color}{$g2}.list;
+            %groups{$color}{$g1} :delete;
+            %groups{$color}{$g2} :delete;
+            %groups{$color}{$new_name} = [@chains_g1, @chains_g2];
+        }
+    }
+    return %groups;
+}
+
+sub show_groups(%groups, @links) {
+    say "Groups:";
+    for "V", "H" -> $color {
+        my %inv;
+        for %groups{$color}.kv -> $group, @chains {
+            for @chains -> $chain {
+                %inv{$chain} = $group;
+            }
+        }
+
+        for %groups{$color}.sort(*.key) -> Pair (:key($name), :value(@chains)) {
+            my $pieces = 0;
+            for @chains -> $chain {
+                $pieces += %chains{$color}{$chain}.elems;
+            }
+            $pieces -= 13 for $name.comb(/'!'/);
+            next unless $pieces;
+            my $links = 0;
+            for @links.grep(*.color eq $color) -> $link {
+                my ($ch1, $ch2) = $link.chains.list;
+                $links++ if %inv{$ch1} eq %inv{$ch2} eq $name;
+            }
+            my $s1 = $pieces == 1 ?? "" !! "s";
+            my $s2 = $links == 1 ?? "" !! "s";
+            say "  $name: $pieces piece$s1; $links link$s2";
+        }
+        say "";
+    }
+}
+
 sub MAIN($game = "mvm/93103") {
     given open($game) -> $fh {
         my &swap_coords = -> { die "swap_coords called before first move"; };
@@ -186,6 +260,9 @@ sub MAIN($game = "mvm/93103") {
                 say "";
                 return;
             }
+
+            my %groups = compute_groups(@links);
+            show_groups(%groups, @links);
         }
 
         for $fh.lines {

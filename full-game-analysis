@@ -23,19 +23,17 @@ reset_chains;
 
 sub show_board(@links, $lastmove [$l1, $l2]) {
     my %linkpos;
-    my $next_unique_letter = "a";
     for "V", "H" -> $color {
         for @links.grep(*.color eq $color)\
                   .sort(*.chains[1]).sort(*.chains[0])\
                   .classify(*.chains.join).values
         -> @l {
-            my $letter = $next_unique_letter++;
             for @l -> $link {
                 if %linkpos{"$link.c1();$link.c2()"} :exists {
                     %linkpos{"$link.c1();$link.c2()"} = "!";
                 }
                 else {
-                    %linkpos{"$link.c1();$link.c2()"} = $letter;
+                    %linkpos{"$link.c1();$link.c2()"} = ":";
                 }
             }
         }
@@ -47,11 +45,17 @@ sub show_board(@links, $lastmove [$l1, $l2]) {
     for 1..13 -> $c1 {
         print " " x ($c1 - 1), space($c1, 1);
         for 1..13 -> $c2 {
+            print @board[$c1][$c2];
+            print space($c1, $c2 + 1);
+        }
+        print " " x 6, space($c1, 1);
+        for 1..13 -> $c2 {
             if %linkpos{"$c1;$c2"} {
                 print %linkpos{"$c1;$c2"};
             }
             else {
-                print @board[$c1][$c2];
+                print @board[$c1][$c2] eq "." ?? "." !!
+                      @board[$c1][$c2] eq "V" ?? "+" !! "-";
             }
             print space($c1, $c2 + 1);
         }

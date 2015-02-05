@@ -118,29 +118,6 @@ sub join_chains($color, @names, $coords [$, $]) {
     %chains{$color}{$name} = @coords;
 }
 
-sub show_chains {
-    say "Chains:";
-    for "V", "H" -> $color {
-        for %chains{$color}.keys.sort -> $name {
-            my @coords = %chains{$color}{$name}.list;
-            if $name ~~ /'!'/ {
-                @coords.splice(0, 13);
-            }
-            my $chain = join " ", map -> [$c1, $c2] {
-                chr(ord('a') + $c2 - 1) ~ $c1
-            }, %chains{$color}{$name}.list;
-            if $name ~~ /'!'/ {
-                say "  $name: (edge)",
-                    @coords ?? " + <$chain>" !! "";
-            }
-            else {
-                say "  $name: <$chain>";
-            }
-        }
-        say "";
-    }
-}
-
 class Link {
     has Int $.c1;
     has Int $.c2;
@@ -173,26 +150,6 @@ sub find_links {
     return @links;
 }
 
-sub show_links(@links) {
-    return unless @links;
-
-    say "Links:";
-    my $next_unique_letter = "a";
-    for "V", "H" -> $color {
-        for @links.grep(*.color eq $color)\
-                  .sort(*.chains[1]).sort(*.chains[0])\
-                  .classify(*.chains.join).values
-        -> @l {
-            my $letter = $next_unique_letter++;
-            my $ch1 = @l[0].chains[0];
-            my $ch2 = @l[0].chains[1];
-            sub coord($link) { chr(ord('a') + $link.c2 - 1) ~ $link.c1 };
-            say "  ($letter) $ch1 + $ch2: <{@l.map(&coord).join(" ")}>";
-        }
-        say "";
-    }
-}
-
 sub find_snags(@links) {
     @links.classify(-> $l { "$l.color();$l.c1();$l.c2()" }).grep(*.value.elems > 1)».key;
 }
@@ -218,15 +175,11 @@ sub MAIN($game = "mvm/93103") {
             my @links = find_links;
             show_board(@links, [$c1, $c2]);
 
-            show_chains;
-
             if find_snags(@links) -> @snags {
                 say "Found snags: ({@snags.join(" ")})";
                 say "";
                 return;
             }
-
-            show_links(@links);
         }
 
         for $fh.lines {

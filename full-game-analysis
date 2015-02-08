@@ -21,11 +21,32 @@ sub reset_chains {
 }
 reset_chains;
 
-sub show_board(@links, $lastmove [$l1, $l2]) {
+sub show_board(@links, %groups, $lastmove [$l1, $l2]) {
     my %linkpos;
     for @links -> $link {
         my $pos = "$link.c1();$link.c2()";
         %linkpos{$pos} ~= $link.color.lc;
+    }
+    my %group_of_coord;
+    for "V", "H" -> $color {
+        sub pieces(Pair (:key($name), :value(@chains))) {
+            my $pieces = [+] @chains.map: -> $chain {
+                %chains{$color}{$chain}.elems
+            };
+            $pieces -= 13 for $name.comb(/'!'/);
+            return $pieces;
+        }
+        my $next_unique_letter = { V => "A", H => "a" }{$color};
+        for %groups{$color}.sort(*.key).sort(&pieces).reverse -> Pair $p (:key($name), :value(@chains)) {
+            my $pieces = pieces($p);
+            next unless $pieces;
+            my $letter = $next_unique_letter++;
+            for @chains -> $chain {
+                for %chains{$color}{$chain}[] -> [$c1, $c2] {
+                    %group_of_coord{"$c1;$c2"} = $letter;
+                }
+            }
+        }
     }
     sub space($c1, $c2) {
         [$c1, $c2] eqv [$l1, $l2]   ?? "<" !!
@@ -41,19 +62,21 @@ sub show_board(@links, $lastmove [$l1, $l2]) {
         for 1..13 -> $c2 {
             if %linkpos{"$c1;$c2"} {
                 my $colors = %linkpos{"$c1;$c2"};
-                if $colors ~~ /v/ & /h/ {
+                if $colors ~~ /v/ & /h/ && $colors.chars > 2 {
+                    print "‽";
+                }
+                elsif $colors ~~ /v/ & /h/ {
                     print "!";
                 }
                 elsif $colors.chars > 1 {
                     print "?";
                 }
                 else {
-                    print $colors;
+                    print { v => "|", h => "-" }{$colors};
                 }
             }
             else {
-                print @board[$c1][$c2] eq "." ?? "." !!
-                      @board[$c1][$c2] eq "V" ?? "+" !! "-";
+                print %group_of_coord{"$c1;$c2"} // ".";
             }
             print space($c1, $c2 + 1);
         }
@@ -214,13 +237,21 @@ sub show_groups(%groups, @links) {
             }
         }
 
-        for %groups{$color}.sort(*.key) -> Pair (:key($name), :value(@chains)) {
-            my $pieces = 0;
-            for @chains -> $chain {
-                $pieces += %chains{$color}{$chain}.elems;
-            }
+        sub pieces(Pair (:key($name), :value(@chains))) {
+            my $pieces = [+] @chains.map: -> $chain {
+                %chains{$color}{$chain}.elems
+            };
             $pieces -= 13 for $name.comb(/'!'/);
+            return $pieces;
+        }
+
+        my $next_unique_letter = { V => "A", H => "a" }{$color};
+
+        for %groups{$color}.sort(*.key).sort(&pieces).reverse -> Pair $p (:key($name), :value(@chains)) {
+            my $pieces = pieces($p);
             next unless $pieces;
+
+            my $letter = $next_unique_letter++;
             my $links = 0;
             for @links.grep(*.color eq $color) -> $link {
                 my ($ch1, $ch2) = $link.chains.list;
@@ -228,7 +259,7 @@ sub show_groups(%groups, @links) {
             }
             my $s1 = $pieces == 1 ?? "" !! "s";
             my $s2 = $links == 1 ?? "" !! "s";
-            say "  $name: $pieces piece$s1; $links link$s2";
+            say "  $letter: $pieces piece$s1; $links link$s2";
         }
         say "";
     }
@@ -253,16 +284,18 @@ sub MAIN($game = "mvm/93103") {
                 join_chains($color, @n, [$c1, $c2]);
             }
             my @links = find_links;
-            show_board(@links, [$c1, $c2]);
 
             if find_snags(@links) -> @snags {
+                show_board(@links, { V => {}, H => {} }, [$c1, $c2]);
                 say "Found snags: ({@snags.join(" ")})";
                 say "";
                 return;
             }
-
-            my %groups = compute_groups(@links);
-            show_groups(%groups, @links);
+            else {
+                my %groups = compute_groups(@links);
+                show_board(@links, %groups, [$c1, $c2]);
+                show_groups(%groups, @links);
+            }
         }
 
         for $fh.lines {

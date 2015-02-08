@@ -21,6 +21,10 @@ sub reset_chains {
 }
 reset_chains;
 
+my %letter_of_group;
+my @letters = "A" .. "Z";
+my $index = 0;
+
 sub show_board(@links, %groups, $lastmove [$l1, $l2]) {
     my %linkpos;
     for @links -> $link {
@@ -29,18 +33,8 @@ sub show_board(@links, %groups, $lastmove [$l1, $l2]) {
     }
     my %group_of_coord;
     for "V", "H" -> $color {
-        sub pieces(Pair (:key($name), :value(@chains))) {
-            my $pieces = [+] @chains.map: -> $chain {
-                %chains{$color}{$chain}.elems
-            };
-            $pieces -= 13 for $name.comb(/'!'/);
-            return $pieces;
-        }
-        my $next_unique_letter = { V => "A", H => "a" }{$color};
-        for %groups{$color}.sort(*.key).sort(&pieces).reverse -> Pair $p (:key($name), :value(@chains)) {
-            my $pieces = pieces($p);
-            next unless $pieces;
-            my $letter = $next_unique_letter++;
+        for %groups{$color}.pairs -> Pair $p (:key($name), :value(@chains)) {
+            my $letter = %letter_of_group{$name};
             for @chains -> $chain {
                 for %chains{$color}{$chain}[] -> [$c1, $c2] {
                     %group_of_coord{"$c1;$c2"} = $letter;
@@ -72,7 +66,7 @@ sub show_board(@links, %groups, $lastmove [$l1, $l2]) {
                     print "?";
                 }
                 else {
-                    print { v => "|", h => "-" }{$colors};
+                    print { v => "\\", h => "/" }{$colors};
                 }
             }
             else {
@@ -224,6 +218,11 @@ sub compute_groups(@links) {
             %groups{$color}{$new_name} = [@chains_g1, @chains_g2];
         }
     }
+    for "V", "H" -> $color {
+        for %groups{$color}.keys -> $name {
+            %letter_of_group{$name} //= @letters[$index++ % @letters];
+        }
+    }
     return %groups;
 }
 
@@ -245,13 +244,11 @@ sub show_groups(%groups, @links) {
             return $pieces;
         }
 
-        my $next_unique_letter = { V => "A", H => "a" }{$color};
-
         for %groups{$color}.sort(*.key).sort(&pieces).reverse -> Pair $p (:key($name), :value(@chains)) {
             my $pieces = pieces($p);
             next unless $pieces;
 
-            my $letter = $next_unique_letter++;
+            my $letter = %letter_of_group{$name};
             my $links = 0;
             for @links.grep(*.color eq $color) -> $link {
                 my ($ch1, $ch2) = $link.chains.list;

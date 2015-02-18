@@ -1,0 +1,27 @@
+9: Milking.
+
+15: Milking.
+
+17: Minimax.
+
+19: (Through to 20.) Laddering.
+
+24: Milking.
+
+27: Intrusion for territory.
+
+31: Bottleneck.
+
+32: Milking.
+
+33: White doesn't respond to the milking, but instead counters the ladder that j9 would have been an escape for. White also conveniently connects l6 to the top edge.
+
+39: (Through to 42.) Laddering.
+
+41: White preempts a ladder from k8.
+
+44: Bottleneck.
+
+47: (Through to 51.) Laddering.
+
+55: This move wins the ladder for White. f10 connects both backwards to the ladder (via h10) and forwards to the edge (since e11 provides one weak connection, and through d10 White can just slide down to success). White now has a guaranteed connection between the upper and lower edge, and Black should resign.

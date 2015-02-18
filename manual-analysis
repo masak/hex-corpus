@@ -1,0 +1,100 @@
+my @board;
+sub reset_board {
+    @board = ['.' xx 15] xx 15;
+    for 1..13 -> $c2 { @board[0][$c2] = "V"; @board[14][$c2] = "V" }
+    for 1..13 -> $c1 { @board[$c1][0] = "H"; @board[$c1][14] = "H" }
+}
+reset_board;
+
+my %analysis;
+sub analysis($movenum, $linenum) {
+    my $message = %analysis{$movenum} // "";
+    my $line;
+
+    for 1..$linenum {
+        $line = $message;
+        $line ~~ s[\h* \H+ $] = "" until $line.chars <= 40;
+        $message .= substr($line.chars);
+        $message .= trim-leading;
+    }
+
+    return $line;
+}
+
+sub show_board($lastmove [$l1, $l2], $movenum) {
+    sub space($c1, $c2) {
+        [$c1, $c2] eqv [$l1, $l2]   ?? "<" !!
+        [$c1, $c2] eqv [$l1, $l2+1] ?? ">" !! " ";
+    }
+    for 1..13 -> $c1 {
+        print " " x ($c1 - 1), space($c1, 1);
+        for 1..13 -> $c2 {
+            print @board[$c1][$c2];
+            print space($c1, $c2 + 1);
+        }
+        print " " x (15 - $c1);
+        print analysis($movenum, $c1);
+        print "\n";
+    }
+    print "\n";
+}
+
+sub MAIN($file = "hand-picked/1684630") {
+    my $analysis-file = "$file.analysis";
+    %analysis = $analysis-file.IO.lines.map: {
+        next if /^ \s* $/;
+        /:s (\d+) ':' (.*?) $/
+            or die "Could not parse line '$_'";
+        my ($move, $comment) = ~$0, ~$1;
+        $move => $comment;
+    };
+
+    given open($file) -> $fh {
+        my &swap_coords = -> { die "swap_coords called before first move"; };
+
+        sub process_new_move(Int $c1, Int $c2, Str $color, Int $movenum) {
+            @board[$c1][$c2] = $color;
+            &swap_coords = -> { $c2, $c1 };
+
+            show_board([$c1, $c2], $movenum);
+        }
+
+        for $fh.lines.kv -> $i, $_ {
+            my $movenum = $i + 1;
+
+            say "$movenum. $_";
+            say "";
+
+            when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+                my $player = ~$0;
+                my $column = ~$1;
+                my $row = ~$2;
+
+                my $color = $player eq "White" ?? "V" !! "H";
+                my $c1 = +$row;
+                my $c2 = ord($column) - ord("a") + 1;
+
+                process_new_move($c1, $c2, $color, $movenum);
+            }
+
+            when /^ 'Black swaps.' $/ {
+                my $color = "H";
+                my ($c1, $c2) = swap_coords;
+
+                reset_board;
+
+                process_new_move($c1, $c2, $color, $movenum);
+            }
+
+            when /^ (White|Black) ' resigns.' $/ {
+                say "Game over.";
+            }
+
+            when /^ (White|Black) ' times out.' $/ {
+                say "Game over.";
+            }
+
+            die "could not match $_";
+        }
+    }
+}

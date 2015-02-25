@@ -1,0 +1,223 @@
+my @board;
+sub reset_board {
+    @board = ['.' xx 15] xx 15;
+    for 1..13 -> $c2 { @board[0][$c2] = "V"; @board[14][$c2] = "V" }
+    for 1..13 -> $c1 { @board[$c1][0] = "H"; @board[$c1][14] = "H" }
+}
+reset_board;
+
+my %analysis;
+
+sub svg-board([$latest-row, $latest-column], $movenum) {
+    my @body;
+
+    sub draw-line($p1 [$x1, $y1], $p2 [$x2, $y2]) {
+        @body.push: qq[<path d="M $x1,$y1 $x2,$y2" class="hexwall" />];
+    }
+
+    constant σ = 0.866;
+
+    sub hexpoint($row, $column, $edge) {
+        my $cx = $column * 2 * σ + $row * σ - 1;
+        my $cy = (1 + σ/2) * $row;
+        return do given $edge % 6 {
+            when 0 { [$cx, $cy - 1/2 - σ/2] }
+            when 1 { [$cx + σ, $cy - 1/2] }
+            when 2 { [$cx + σ, $cy + 1/2] }
+            when 3 { [$cx, $cy + 1/2 + σ/2] }
+            when 4 { [$cx - σ, $cy + 1/2] }
+            when 5 { [$cx - σ, $cy - 1/2] }
+        }
+    }
+
+    sub draw-hex($row, $column) {
+        my @points = (0..5).map({ [hexpoint($row, $column, $_)] });
+        my $path = "M " ~ @points.map(-> [$x, $y] { "$x,$y" }).join(" ");
+        @body.push: qq[<path d="$path" class="hexbody" />];
+    }
+
+    sub draw-piece($color, $row, $column) {
+        my $cx = $column * 2 * σ + $row * σ - 1;
+        my $cy = (1 + σ/2) * $row;
+        @body.push: qq[<circle cx="$cx" cy="$cy" r="0.7" class="piece-$color" />];
+
+        if [$row, $column] eqv [$latest-row, $latest-column] {
+            @body.push: qq[<text x="$cx" y="$cy" class="movenum movenum-$color">{$movenum}</text>];
+        }
+    }
+
+    for 1..13 -> $row {
+        for 1..13 -> $column {
+            draw-hex($row, $column);
+        }
+    }
+
+    for 1..13 -> $row {
+        for 1..13 -> $column {
+            for 0..5 -> $edge {
+                next if $edge == 0 && $row > 1 && $column < 13;
+                next if $edge == 5 && $row > 1;
+                next if $edge == 4 && $column > 1;
+
+                draw-line(
+                    hexpoint($row, $column, $edge),
+                    hexpoint($row, $column, $edge + 1));
+            }
+        }
+    }
+
+    for 1..13 -> $row {
+        for 1..13 -> $column {
+            if (my $color = @board[$row][$column]) ne '.' {
+                draw-piece($color, $row, $column);
+            }
+        }
+    }
+
+    my $body = @body.map({ "    $_" }).join("\n");
+
+    return qq:to/EOF/;
+        <svg
+           xmlns:dc="http://purl.org/dc/elements/1.1/"
+           xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+           xmlns:svg="http://www.w3.org/2000/svg"
+           xmlns="http://www.w3.org/2000/svg"
+           version="1.1"
+           width="680"
+           height="400">
+            <style>
+              .hexbody \{
+                fill:#dddddd;
+              \}
+
+              .hexwall \{
+                stroke:#999999;
+                stroke-width:0.08;
+                stroke-linecap:round;
+              \}
+
+              .piece-V \{
+                fill:#ffffff;
+                stroke:#000000;
+                stroke-width:0.08;
+              \}
+
+              .piece-H \{
+                fill:#000000;
+              \}
+
+              .movenum \{
+                font-size: 0.8px;
+                text-anchor: middle;
+                alignment-baseline: middle;
+                fill: #000000;
+                font-family: sans-serif;
+              \}
+
+              .movenum-V \{
+                fill: #000000;
+              \}
+
+              .movenum-H \{
+                fill: #ffffff;
+              \}
+            </style>
+        <g transform="scale(20)">
+        $body
+        </g>
+        </svg>
+        EOF
+}
+
+sub MAIN($file = "hand-picked/1684630") {
+    my $analysis-file = "$file.analysis";
+    %analysis = $analysis-file.IO.lines.map: {
+        next if /^ \s* $/;
+        /:s (\d+) ':' (.*?) $/
+            or die "Could not parse line '$_'";
+        my ($move, $comment) = ~$0, ~$1;
+        $move => $comment;
+    };
+
+    say q:to/HEADER/;
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE html 
+             PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+            "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+        <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+        <head>
+          <title>Game analysis</title>
+          <style>
+            body {
+              font-family: Sans-Serif;
+              font-size: 200%;
+            }
+
+            td.comment {
+              vertical-align: top;
+            }
+          </style>
+        </head>
+        <body>
+        <table class="game-analysis">
+        HEADER
+
+    given open($file) -> $fh {
+        my &swap_coords = -> { die "swap_coords called before first move"; };
+
+        sub process_new_move(Int $c1, Int $c2, Str $color, Int $movenum) {
+            @board[$c1][$c2] = $color;
+            &swap_coords = -> { $c2, $c1 };
+
+            say "<tr><td>";
+            say svg-board([$c1, $c2], $movenum);
+            say q[</td><td class="comment">];
+            if %analysis{$movenum} -> $analysis {
+                say $analysis;
+            }
+            say "</td></tr>";
+        }
+
+        for $fh.lines.kv -> $i, $_ {
+            my $movenum = $i + 1;
+
+            when /^ (White|Black) ' places ' (\w)(\d+) '.' $/ {
+                my $player = ~$0;
+                my $column = ~$1;
+                my $row = ~$2;
+
+                my $color = $player eq "White" ?? "V" !! "H";
+                my $c1 = +$row;
+                my $c2 = ord($column) - ord("a") + 1;
+
+                process_new_move($c1, $c2, $color, $movenum);
+            }
+
+            when /^ 'Black swaps.' $/ {
+                my $color = "H";
+                my ($c1, $c2) = swap_coords;
+
+                reset_board;
+
+                process_new_move($c1, $c2, $color, $movenum);
+            }
+
+            when /^ (White|Black) ' resigns.' $/ {
+                # XXX show board but not with new piece
+            }
+
+            when /^ (White|Black) ' times out.' $/ {
+                # XXX show board but not with new piece
+            }
+
+            die "could not match $_";
+        }
+    }
+
+    say q:to/FOOTER/;
+        </table>
+        </body>
+        </html>
+        FOOTER
+
+}

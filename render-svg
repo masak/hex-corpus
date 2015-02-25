@@ -8,14 +8,14 @@ reset_board;
 
 my %analysis;
 
-sub svg-board([$latest-row, $latest-column], $movenum) {
+constant σ = 0.866;
+
+sub base-board {
     my @body;
 
     sub draw-line($p1 [$x1, $y1], $p2 [$x2, $y2]) {
         @body.push: qq[<path d="M $x1,$y1 $x2,$y2" class="hexwall" />];
     }
-
-    constant σ = 0.866;
 
     sub hexpoint($row, $column, $edge) {
         my $cx = $column * 2 * σ + $row * σ - 1;
@@ -36,16 +36,6 @@ sub svg-board([$latest-row, $latest-column], $movenum) {
         @body.push: qq[<path d="$path" class="hexbody" />];
     }
 
-    sub draw-piece($color, $row, $column) {
-        my $cx = $column * 2 * σ + $row * σ - 1;
-        my $cy = (1 + σ/2) * $row;
-        @body.push: qq[<circle cx="$cx" cy="$cy" r="0.7" class="piece-$color" />];
-
-        if [$row, $column] eqv [$latest-row, $latest-column] {
-            @body.push: qq[<text x="$cx" y="$cy" class="movenum movenum-$color">{$movenum}</text>];
-        }
-    }
-
     for 1..13 -> $row {
         for 1..13 -> $column {
             draw-hex($row, $column);
@@ -63,6 +53,24 @@ sub svg-board([$latest-row, $latest-column], $movenum) {
                     hexpoint($row, $column, $edge),
                     hexpoint($row, $column, $edge + 1));
             }
+        }
+    }
+
+    return @body.map({ "    $_" }).join("\n");
+}
+
+sub svg-board([$latest-row, $latest-column], $movenum) {
+    state $base-board = base-board();
+
+    my @body;
+
+    sub draw-piece($color, $row, $column) {
+        my $cx = $column * 2 * σ + $row * σ - 1;
+        my $cy = (1 + σ/2) * $row;
+        @body.push: qq[<circle cx="$cx" cy="$cy" r="0.7" class="piece-$color" />];
+
+        if [$row, $column] eqv [$latest-row, $latest-column] {
+            @body.push: qq[<text x="$cx" y="$cy" class="movenum movenum-$color">{$movenum}</text>];
         }
     }
 
@@ -123,6 +131,7 @@ sub svg-board([$latest-row, $latest-column], $movenum) {
               \}
             </style>
         <g transform="scale(20)">
+        $base-board
         $body
         </g>
         </svg>

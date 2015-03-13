@@ -77,7 +77,7 @@ sub infer-groups(Logger:D $logger, $board) {
                     next unless @board[$h1.r][$h1.c] eq '.';
                     next unless @board[$h2.r][$h2.c] eq '.';
                     next if %plumage{"$r;$c"} :exists;
-                    %plumage{"$r;$c"} = Feather.new(:pos($n), :helpers($h1, $h2));
+                    %plumage{"$r;$c%$h1,$h2"} = Feather.new(:pos($n), :helpers($h1, $h2));
                 }
             }
             return %plumage.values.sort(*.pos.c).sort(*.pos.r);
@@ -521,9 +521,6 @@ given Logger.new -> $logger {
         LOG
 }
 
-done;
-exit;
-
 given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
@@ -541,9 +538,22 @@ given Logger.new -> $logger {
                     . . . . . . . . . . . . .
         BOARD
 
-    empty-diff $logger.result, q:to/LOG/;
+    empty-diff $logger.result, q:to/LOG/, "lots of links; only two don't overlap";
+        Found chain (A): (5, 4), (5, 5), (6, 3)
+        Found chain (B): (7, 5)
+        Weak A+B link (l1): (5, 6) % (6, 5), (6, 6)
+        Weak A+B link (l2): (6, 4) % (6, 5), (7, 4)
+        Weak A+B link (l3): (6, 5)
+        Weak A+B link (l4): (6, 6) % (5, 6), (6, 5)
+        Weak A+B link (l5): (7, 4) % (6, 4), (6, 5)
+        Weak A+B link (l6): (7, 4) % (6, 4), (7, 3)
+        Forming group (C): A, B || l1, l6
+        Resulting groups: C
         LOG
 }
+
+done;
+exit;
 
 given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);

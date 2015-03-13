@@ -192,8 +192,7 @@ sub empty-diff($actual is copy, $expected is copy, $desc = "<description missing
     is $diff, "", $desc;
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -217,8 +216,7 @@ sub empty-diff($actual is copy, $expected is copy, $desc = "<description missing
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -245,8 +243,7 @@ sub empty-diff($actual is copy, $expected is copy, $desc = "<description missing
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -276,8 +273,7 @@ sub empty-diff($actual is copy, $expected is copy, $desc = "<description missing
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -302,8 +298,7 @@ sub empty-diff($actual is copy, $expected is copy, $desc = "<description missing
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -335,8 +330,7 @@ sub empty-diff($actual is copy, $expected is copy, $desc = "<description missing
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -372,8 +366,7 @@ sub empty-diff($actual is copy, $expected is copy, $desc = "<description missing
 done;
 exit;
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -394,8 +387,7 @@ exit;
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -416,8 +408,7 @@ exit;
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -438,8 +429,7 @@ exit;
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -460,8 +450,7 @@ exit;
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -482,8 +471,7 @@ exit;
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -504,8 +492,7 @@ exit;
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .
@@ -526,8 +513,7 @@ exit;
         LOG
 }
 
-{
-    my Logger $logger .= new;
+given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
          . . . . . . . . . . . . .

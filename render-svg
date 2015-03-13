@@ -6,8 +6,6 @@ sub reset_board {
 }
 reset_board;
 
-my %analysis;
-
 constant σ = 0.866;
 
 sub base-board {
@@ -140,7 +138,7 @@ sub svg-board([$latest-row, $latest-column], $movenum) {
 
 sub MAIN($file = "hand-picked/1684630") {
     my $analysis-file = "$file.analysis";
-    %analysis = $analysis-file.IO.lines.map: {
+    my %analysis = $analysis-file.IO.lines.map: {
         next if /^ \s* $/;
         /:s (\d+) ':' (.*?) $/
             or die "Could not parse line '$_'";

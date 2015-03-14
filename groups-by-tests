@@ -291,7 +291,51 @@ sub infer-groups(Logger:D $logger, $board) {
                         $world.logger.log: "Upgrading $name: $old-groups -> $new-groups";
                     }
                 }
-                # XXX: there used to be an else clause here; but don't want to recurse arbitrarily quite yet
+                else {
+                    SEARCH:
+                    for @lbg.sort(+*.helpers) -> $l1 {
+                        for @lbg -> $l2 {
+                            next if $l1 === $l2;
+                            next if $l2.pos eq $l1.pos;
+                            next if $l2.pos eq any($l1.helpers);
+
+                            my $world2 = World.new(
+                                :links($world.links),
+                                :unique-group-name($world.unique-group-name),
+                                :unique-blocker-name($world.unique-blocker-name),
+                                :unique-link-name($world.unique-link-name),
+                                :board( $world.board.map: -> @row { [@row] } ),
+                                :logger( Logger.new ),
+                            );
+                            if investigate-sacrifice($l1, $l2, $g1, $g2, $world2) {
+                                $world.logger.log: "Sacrificing {$l1.name} to try {$l2.pos}:";
+                                for $world2.logger.result.lines -> $line {
+                                    $world.logger.log: "    $line";
+                                }
+                                $world.unique-group-name = $world2.unique-group-name;
+                                $world.unique-blocker-name = $world2.unique-blocker-name;
+                                $world.unique-link-name = $world2.unique-link-name;
+
+                                my $link;
+                                {
+                                    my $name = "l" ~ $world.unique-link-name++;
+                                    $link = Link.new(:$name, :pos($l2.pos), :groups($g1, $g2));
+                                    $world.links.push: $link;
+                                    $world.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} -- by simulation";
+                                }
+                                my @nl = $l1, $world2.necessary-links[], $link;
+                                my $name = $world.unique-group-name++;
+                                $world.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
+                                my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
+                                my $new-group = Group.new(:$name, :@positions);
+                                @localgroups.push($new-group);
+                                $success = True;
+                                $world.necessary-links = @nl;
+                                last SEARCH;
+                            }
+                        }
+                    }
+                }
             }
         }
         return $success;
@@ -806,9 +850,6 @@ given Logger.new -> $logger {
         LOG
 }
 
-done;
-exit;
-
 given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
@@ -836,33 +877,39 @@ given Logger.new -> $logger {
         Weak A+B link (l5): (7, 7) % (6, 7), (6, 8)
         Sacrificing l3 to try (7, 7):
             Put blocker (b1): (6, 8)
-            Invalidated links: l1, l2, l4, l5
+            Invalidated links: l1, l2, l3, l4, l5
             B extended with (7, 7)
-            Weak A+B link (l6): (6, 7)
-            Weak A+B link (l7): (7, 6) % (6, 6), (6, 7)
-            Sacrificing l6 to try (7, 6):
+            Weak A+B link (l6): (6, 6) % (6, 7), (7, 6)
+            Weak A+B link (l7): (6, 7)
+            Weak A+B link (l8): (7, 6) % (6, 6), (6, 7)
+            Sacrificing l7 to try (7, 6):
                 Put blocker (b2): (6, 7)
-                Invalidated links: l7
+                Invalidated links: l6, l7, l8
                 B extended with (7, 6)
-                Weak A+B link (l8): (6, 6)
-                Weak A+B link (l9): (7, 5) % (6, 5), (6, 6)
-                Sacrificing l8 to try (7, 5):
+                Weak A+B link (l9): (6, 5) % (6, 6), (7, 5)
+                Weak A+B link (l10): (6, 6)
+                Weak A+B link (l11): (7, 5) % (6, 5), (6, 6)
+                Sacrificing l10 to try (7, 5):
                     Put blocker (b3): (6, 6)
-                    Invalidated links: l9
+                    Invalidated links: l9, l10, l11
                     B extended with (7, 5)
-                    Weak A+B link (l10): (6, 5)
-                    Weak A+B link (l11): (7, 4) % (6, 4), (6, 5)
-                    Weak A+B link (l12): (7, 4) % (6, 4), (7, 3)
-                    Forming group (C): A, B || l10, l12
-                Weak A+B link (l13): (7, 5) -- by simulation
-                Forming group (D): A, B || l18, l10, l12, l13
-            Weak A+B link (l14): (7, 6) -- by simulation
-            Forming group (E): A, B || l6, l8, l10, l12, l13, l14
-        Weak A+B link (l15): (7, 7) -- by simulation
-        Forming group (F): A, B || l3, l6, l8, l10, l12, l13, l14, l15
+                    Weak A+B link (l12): (6, 4) % (6, 5), (7, 4)
+                    Weak A+B link (l13): (6, 5)
+                    Weak A+B link (l14): (7, 4) % (6, 4), (6, 5)
+                    Weak A+B link (l15): (7, 4) % (6, 4), (7, 3)
+                    Forming group (C): A, B || l13, l15
+                Weak A+B link (l16): (7, 5) -- by simulation
+                Forming group (D): A, B || l10, l13, l15, l16
+            Weak A+B link (l17): (7, 6) -- by simulation
+            Forming group (E): A, B || l7, l10, l13, l15, l16, l17
+        Weak A+B link (l18): (7, 7) -- by simulation
+        Forming group (F): A, B || l3, l7, l10, l13, l15, l16, l17, l18
         Resulting groups: F
         LOG
 }
+
+done;
+exit;
 
 given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);

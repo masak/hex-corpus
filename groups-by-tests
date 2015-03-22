@@ -97,12 +97,12 @@ sub far-neighbors($pos) {
     ;
 }
 
-sub find-chains(@board, $logger) {
+sub find-chains($world) {
     my %seen;
 
     sub find-whole-chain($r, $c) {
         sub coords($pos) { "$pos.r();$pos.c()" }
-        sub contents($pos) { @board[$pos.r][$pos.c] }
+        sub contents($pos) { $world.board[$pos.r][$pos.c] }
 
         my $chain = set();
         my @queue = Pos.new(:$r, :$c);
@@ -125,34 +125,23 @@ sub find-chains(@board, $logger) {
         }).sort(*.c).sort(*.r);
     }
 
-    my $unique-group-name = "A";
     my @groups;
-
-    my $unique-blocker-name = "b1";
-    my %blockers;
-
-    for @board.kv -> $r, @row {
+    for $world.board.kv -> $r, @row {
         for @row.kv -> $c, $piece {
             if $piece eq "/" {
-                my $name = $unique-blocker-name++;
-                %blockers{"($r, $c)"}++;
-                $logger.log: "Found blocker ($name): ($r, $c)";
+                my $name = $world.unique-blocker-name++;
+                $world.logger.log: "Found blocker ($name): ($r, $c)";
             }
             elsif $piece eq "#" && !%seen{"$r;$c"} {
-                my $name = $unique-group-name++;
+                my $name = $world.unique-group-name++;
                 my @positions = find-whole-chain($r, $c);
                 @groups.push: Group.new(:$name, :@positions);
-                $logger.log: "Found chain ($name): @positions.join(", ")";
+                $world.logger.log: "Found chain ($name): @positions.join(", ")";
             }
         }
     }
 
-    return {
-        :@groups,
-        :%blockers,
-        :$unique-group-name,
-        :$unique-blocker-name,
-    };
+    return @groups;
 }
 
 sub find-links(@groups, $world) {
@@ -377,20 +366,15 @@ sub infer-groups(Logger:D $logger, $board) {
         }
     }
 
-    my $result = find-chains(@board, $logger);
-    my @groups = $result<groups>[];
-    my %blockers = $result<blockers>[];
-    my $unique-group-name = $result<unique-group-name>;
-    my $unique-blocker-name = $result<unique-blocker-name>;
-
     my $world = World.new(
-        :$unique-group-name,
-        :$unique-blocker-name,
+        :unique-group-name<A>,
+        :unique-blocker-name<b1>,
         :unique-link-name(1),
         :@board,
         :$logger,
     );
 
+    my @groups = find-chains($world);
     find-links(@groups, $world);
     merge-groups(@groups, $world);
 

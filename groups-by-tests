@@ -121,28 +121,21 @@ sub find-chains($world) {
     my %seen;
 
     sub find-whole-chain($r, $c) {
-        sub coords($pos) { "$pos.r();$pos.c()" }
-        sub contents($pos) { $world.board[$pos.r][$pos.c] }
-
-        my $chain = set();
+        my %chain;
         my @queue = Pos.new(:$r, :$c);
         while @queue {
             my $pos = @queue.shift;
-            my $coords = "$pos.r();$pos.c()";
+            my $coords = ~$pos;
             next if %seen{$coords}++;
 
-            $chain ∪= $coords;
+            %chain{$coords} = $pos;
             for neighbors($pos) -> $n {
-                if contents($n) eq "#" && !%seen{coords $n} {
+                if $world.board[$n.r][$n.c] eq "#" && !%seen{~$n} {
                     @queue.push: $n;
                 }
             }
         }
-        return $chain.list.map({
-            /(\d+) ';' (\d+)/ or die "!";
-            my ($r, $c) = +$0, +$1;
-            Pos.new(:$r, :$c);
-        }).sort(*.c).sort(*.r);
+        return %chain.values;
     }
 
     my @groups;
@@ -152,11 +145,11 @@ sub find-chains($world) {
                 my $name = $world.unique-blocker-name++;
                 $world.logger.log: "Found blocker ($name): ($r, $c)";
             }
-            elsif $piece eq "#" && !%seen{"$r;$c"} {
+            elsif $piece eq "#" && !%seen{"($r, $c)"} {
                 my $name = $world.unique-group-name++;
                 my @positions = find-whole-chain($r, $c);
                 @groups.push: Group.new(:$name, :@positions);
-                $world.logger.log: "Found chain ($name): @positions.join(", ")";
+                $world.logger.log: "Found chain ($name): @positions.sort(*.c).sort(*.r).join(", ")";
             }
         }
     }

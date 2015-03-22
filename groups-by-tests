@@ -912,23 +912,57 @@ exit;
 given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);
         . . . . . . . . . . . . .
-         . . . . . . . . . . . . .
-          . . . . . . # # # # . . .
-           . . . . . # . . . # . . .
-            . . . . # . . . . # . . .
-             . . . # . . . . . # . . .
-              . . # # . . . . . # . . .
-               . # . . . . . . . . . . .
-                # . . . . + . . . . . . .
-                 # # # / . . . . . . . . .
-                  . . # . . . . . . . . . .
-                   . # . . . . . . . . . . .
-                    . # . # . . . . . . . . .
+         . . . . . . # # # # . . .
+          . . . . . # . . . # . . .
+           . . . . # . . . . # . . .
+            . . . # . . . . . # . . .
+             . . # # . . . . . # . . .
+              . # . . . . . . . . . . .
+               # . . . . . . . . . . . .
+                # . . / . . . . . . . . .
+                 # # # . . . . . . . . . .
+                  # . / . . . . . . . . . .
+                   # # . # . . . . . . . . .
+                    . . . . . . . . . . . . .
         BOARD
 
-    empty-diff $logger.result, q:to/LOG/;
+    empty-diff $logger.result, q:to/LOG/, "branching simulations leading to the group";
+        Found chain (A): (2, 7), (2, 8), (2, 9), (2, 10), (3, 6), (3, 10), (4, 5), (4, 10), (5, 4), (5, 10), (6, 3), (6, 4), (6, 10), (7, 2), (8, 1), (9, 1), (10, 1), (10, 2), (10, 3), (11, 1), (12, 1), (12, 2)
+        Found blocker (b1): (9, 4)
+        Found blocker (b2): (11, 3)
+        Found chain (B): (12, 4)
+        Weak A+B link (l1): (12, 3)
+        Weak A+B link (l2): (13, 2) % (12, 3), (13, 3)
+        Weak A+B link (l3): (13, 3) % (12, 3), (13, 2)
+        Sacrificing l1 to try (10, 5):
+            Put blocker (b1): (12, 3)
+            Invalidated links: l1, l2, l3
+            Found chain (C): (10, 5)
+            Weak A+C link (l4): (10, 4)
+            Weak B+C link (l5): (11, 4)
+            Weak B+C link (l6): (11, 5)
+            Forming group (D): B, C || l5, l6
+            Sacrificing l4 to try (8, 6):
+                Put blocker (b2): (10, 4)
+                Invalidated links: l4
+                Found chain (E): (8, 6)
+                Weak A+E link (l7): (7, 5) % (6, 5), (7, 4), (7, 6), (8, 5)
+                Weak A+E link (l8): (7, 8) % (6, 9), (7, 7), (7, 9), (8, 7)
+                Weak D+E link (l9): (9, 5)
+                Weak D+E link (l10): (9, 6)
+                Forming group (F): A, E || l7, l8
+                    Upgrading l9: D+E -> D+F
+                    Upgrading l10: D+E -> D+F
+                Forming group (G): D, F || l9, l10
+            Weak A+C link (l11): (8, 6) % (6, 5), (6, 9), (7, 4), (7, 5), (7, 6), (7, 7), (7, 8), (7, 9), (8, 5), (8, 7), (9, 5), (9, 6)
+            Forming group (G): A, C || l4, l11
+        Weak A+B link (l12): (10, 5) % (6, 5), (6, 9), (7, 4), (7, 5), (7, 6), (7, 7), (7, 8), (7, 9), (8, 5), (8, 7), (9, 5), (9, 6), (10, 4)
+        Forming group (H): A, B || l1, l12
         LOG
 }
+
+done;
+exit;
 
 given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);

@@ -383,27 +383,15 @@ sub infer-groups(Logger:D $logger, $board) {
     my $unique-group-name = $result<unique-group-name>;
     my $unique-blocker-name = $result<unique-blocker-name>;
 
-    my $unique-link-name = 1;
-    my @links;
-    {
-        my $world = World.new(
-            :$unique-link-name,
-            :board( @board.map: -> @row { [@row] } ),
-            :$logger,
-        );
-        find-links(@groups, $world);
-        @links = $world.links[];
-        $unique-link-name = $world.unique-link-name;
-    }
-
     my $world = World.new(
-        :@links,   # XXX: this may not be enough, since we upgrade the links
         :$unique-group-name,
         :$unique-blocker-name,
-        :$unique-link-name,
+        :unique-link-name(1),
         :@board,
         :$logger,
     );
+
+    find-links(@groups, $world);
     merge-groups(@groups, $world);
 
     $logger.log: "Resulting groups: @groups».name.join(", ")";

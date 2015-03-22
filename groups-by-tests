@@ -219,8 +219,6 @@ sub infer-groups(Logger:D $logger, $board) {
         }
 
         for @localgroups X @localgroups -> $g1, $g2 {
-            next unless defined $g1;
-            next unless defined $g2;
             next if $g1.name ge $g2.name;
             my @p1 = $g1.plumage($world.board);
             my @p2 = $g2.plumage($world.board);

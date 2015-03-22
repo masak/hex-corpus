@@ -265,7 +265,7 @@ sub merge-groups(@groups, $world, $orig-g1-name?, $orig-g2-name?) {
                         next if $l2.pos eq $l1.pos;
                         next if $l2.pos eq any($l1.helpers);
 
-                        my $world2 = World.new(
+                        my $subworld = World.new(
                             :links($world.links),   # XXX: this may not be enough, since we upgrade the links
                             :unique-group-name($world.unique-group-name),
                             :unique-blocker-name($world.unique-blocker-name),
@@ -273,20 +273,20 @@ sub merge-groups(@groups, $world, $orig-g1-name?, $orig-g2-name?) {
                             :board( $world.board.map: -> @row { [@row] } ),
                             :logger( Logger.new ),
                         );
-                        if investigate-sacrifice($l1, $l2, $g1, $g2, $world2) -> $group {
+                        if investigate-sacrifice($l1, $l2, $g1, $g2, $subworld) -> $group {
                             $world.logger.log: "Sacrificing {$l1.name} to try {$l2.pos}:";
-                            for $world2.logger.result.lines -> $line {
+                            for $subworld.logger.result.lines -> $line {
                                 $world.logger.log: "    $line";
                             }
-                            $world.unique-group-name = $world2.unique-group-name;
-                            $world.unique-blocker-name = $world2.unique-blocker-name;
-                            $world.unique-link-name = $world2.unique-link-name;
+                            $world.unique-group-name = $subworld.unique-group-name;
+                            $world.unique-blocker-name = $subworld.unique-blocker-name;
+                            $world.unique-link-name = $subworld.unique-link-name;
 
                             my $link;
                             {
                                 my $name = "l" ~ $world.unique-link-name++;
-                                # my @helpers = ($group.links.map({ .pos, .helpers[] }).flat, $world2.necessary-pos[]).sort(*.c).sort(*.r);
-                                my @helpers = $world2.necessary-pos[].sort(*.c).sort(*.r);
+                                # my @helpers = ($group.links.map({ .pos, .helpers[] }).flat, $subworld.necessary-pos[]).sort(*.c).sort(*.r);
+                                my @helpers = $subworld.necessary-pos[].sort(*.c).sort(*.r);
                                 $link = Link.new(:$name, :pos($l2.pos), :groups($g1, $g2), :@helpers);
                                 $world.links.push: $link;
                                 $world.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} % {@helpers.join(", ")}";

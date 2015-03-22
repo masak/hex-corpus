@@ -56,9 +56,9 @@ class Link {
 class World {
     has Link @.links;
     has Pos @.necessary-pos;
-    has Str $.unique-group-name is rw;
-    has Str $.unique-blocker-name is rw;
-    has Int $.unique-link-name is rw;
+    has Str $.unique-group-name is rw = "A";
+    has Str $.unique-blocker-name is rw = "b1";
+    has Int $.unique-link-name is rw = 1;
     has @.board;
     has Logger $.logger;
 
@@ -371,9 +371,6 @@ sub infer-groups(Logger:D $logger, $board) {
     }
 
     my $world = World.new(
-        :unique-group-name<A>,
-        :unique-blocker-name<b1>,
-        :unique-link-name(1),
         :@board,
         :$logger,
     );

@@ -15,6 +15,37 @@ class Pos {
     method Str { "($.r, $.c)" }
 }
 
+class Feather {
+    has Pos $.pos;
+    has Pos @.helpers;
+}
+
+class Group {
+    has Str $.name;
+    has @.positions;
+
+    method plumage(@board) {
+        my %plumage;
+        for @.positions -> $pos {
+            for neighbors($pos) -> $n {
+                my ($r, $c) = $n.r, $n.c;
+                next unless @board[$r][$c] eq '.';
+                %plumage{"$r;$c"} = Feather.new(:pos($n));
+            }
+            for far-neighbors($pos) -> @nhh {
+                my ($n, $h1, $h2) = @nhh;
+                my ($r, $c) = $n.r, $n.c;
+                next unless @board[$r][$c] eq '.';
+                next unless @board[$h1.r][$h1.c] eq '.';
+                next unless @board[$h2.r][$h2.c] eq '.';
+                next if %plumage{"$r;$c"} :exists;
+                %plumage{"$r;$c%$h1,$h2"} = Feather.new(:pos($n), :helpers($h1, $h2));
+            }
+        }
+        return %plumage.values.sort(*.pos.c).sort(*.pos.r);
+    }
+}
+
 sub is-inside($pos) { 0 <= $pos.r <= 14 && 0 <= $pos.c <= 14 }
 
 my @deltas =
@@ -56,37 +87,6 @@ sub infer-groups(Logger:D $logger, $board) {
         for $line.comb(/\S/).kv -> $j, $char {
             my $col = $j + 1;
             @board[$row][$col] = $char;
-        }
-    }
-
-    my class Feather {
-        has Pos $.pos;
-        has Pos @.helpers;
-    }
-
-    my class Group {
-        has Str $.name;
-        has @.positions;
-
-        method plumage(@board) {
-            my %plumage;
-            for @.positions -> $pos {
-                for neighbors($pos) -> $n {
-                    my ($r, $c) = $n.r, $n.c;
-                    next unless @board[$r][$c] eq '.';
-                    %plumage{"$r;$c"} = Feather.new(:pos($n));
-                }
-                for far-neighbors($pos) -> @nhh {
-                    my ($n, $h1, $h2) = @nhh;
-                    my ($r, $c) = $n.r, $n.c;
-                    next unless @board[$r][$c] eq '.';
-                    next unless @board[$h1.r][$h1.c] eq '.';
-                    next unless @board[$h2.r][$h2.c] eq '.';
-                    next if %plumage{"$r;$c"} :exists;
-                    %plumage{"$r;$c%$h1,$h2"} = Feather.new(:pos($n), :helpers($h1, $h2));
-                }
-            }
-            return %plumage.values.sort(*.pos.c).sort(*.pos.r);
         }
     }
 

@@ -77,19 +77,7 @@ sub far-neighbors($pos) {
     ;
 }
 
-sub infer-groups(Logger:D $logger, $board) {
-    sub LOG(*@things) { $logger.log([~] @things) }
-
-    my @board = ['.' xx 15] xx 15;
-
-    for $board.lines.kv -> $i, $line {
-        my $row = $i + 1;
-        for $line.comb(/\S/).kv -> $j, $char {
-            my $col = $j + 1;
-            @board[$row][$col] = $char;
-        }
-    }
-
+sub find-chains(@board, $logger) {
     my %seen;
 
     sub find-whole-chain($r, $c) {
@@ -127,16 +115,44 @@ sub infer-groups(Logger:D $logger, $board) {
         for @row.kv -> $c, $piece {
             if $piece eq "/" {
                 my $name = $unique-blocker-name++;
-                LOG "Found blocker ($name): ($r, $c)";
+                %blockers{"($r, $c)"}++;
+                $logger.log: "Found blocker ($name): ($r, $c)";
             }
             elsif $piece eq "#" && !%seen{"$r;$c"} {
                 my $name = $unique-group-name++;
                 my @positions = find-whole-chain($r, $c);
                 @groups.push: Group.new(:$name, :@positions);
-                LOG "Found chain ($name): @positions.join(", ")";
+                $logger.log: "Found chain ($name): @positions.join(", ")";
             }
         }
     }
+
+    return {
+        :@groups,
+        :%blockers,
+        :$unique-group-name,
+        :$unique-blocker-name,
+    };
+}
+
+sub infer-groups(Logger:D $logger, $board) {
+    sub LOG(*@things) { $logger.log([~] @things) }
+
+    my @board = ['.' xx 15] xx 15;
+
+    for $board.lines.kv -> $i, $line {
+        my $row = $i + 1;
+        for $line.comb(/\S/).kv -> $j, $char {
+            my $col = $j + 1;
+            @board[$row][$col] = $char;
+        }
+    }
+
+    my $result = find-chains(@board, $logger);
+    my @groups = $result<groups>[];
+    my %blockers = $result<blockers>[];
+    my $unique-group-name = $result<unique-group-name>;
+    my $unique-blocker-name = $result<unique-blocker-name>;
 
     my class Link {
         has Str $.name;

@@ -17,14 +17,20 @@ class Pos {
 
 sub is-inside($pos) { 0 <= $pos.r <= 14 && 0 <= $pos.c <= 14 }
 
+my @deltas =
+         [-1,  0], [-1, +1],
+    [ 0, -1],           [ 0, +1],
+         [+1, -1], [+1,  0],
+;
+
 sub neighbors($pos) {
     my ($r, $c) = $pos.r, $pos.c;
 
     return grep &is-inside,
-        Pos.new(:r($r-1), :$c), Pos.new(:r($r-1), :c($c+1)),
-        Pos.new(:$r, :c($c-1)), Pos.new(:$r, :c($c+1)),
-        Pos.new(:r($r+1), :c($c-1)), Pos.new(:r($r+1), :$c),
-    ;
+        map -> [$dr, $dc] {
+            Pos.new(:r($r + $dr), :c($c + $dc))
+        },
+        @deltas;
 }
 
 sub far-neighbors($pos) {

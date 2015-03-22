@@ -85,12 +85,15 @@ sub far-neighbors($pos) {
     my ($r, $c) = $pos.r, $pos.c;
 
     return grep *.[0].&is-inside,
-        [Pos.new(:r($r-2), :c($c+1)), Pos.new(:r($r-1), :$c), Pos.new(:r($r-1), :c($c+1))],
-        [Pos.new(:r($r-1), :c($c-1)), Pos.new(:r($r-1), :$c), Pos.new(:$r, :c($c-1))],
-        [Pos.new(:r($r-1), :c($c+2)), Pos.new(:r($r-1), :c($c+1)), Pos.new(:$r, :c($c+1))],
-        [Pos.new(:r($r+1), :c($c-2)), Pos.new(:$r, :c($c-1)), Pos.new(:r($r+1), :c($c-1))],
-        [Pos.new(:r($r+1), :c($c+1)), Pos.new(:$r, :c($c+1)), Pos.new(:r($r+1), :$c)],
-        [Pos.new(:r($r+2), :c($c-1)), Pos.new(:r($r+1), :c($c-1)), Pos.new(:r($r+1), :$c)],
+        map -> [$rD, $cD, $r1, $c1, $r2, $c2] {
+            [Pos.new(:r($rD), :c($cD)), Pos.new(:r($r1), :c($c1)), Pos.new(:r($r2), :c($c2))]
+        },
+        [$r-2, $c+1, $r-1, $c, $r-1, $c+1],
+        [$r-1, $c-1, $r-1, $c, $r, $c-1],
+        [$r-1, $c+2, $r-1, $c+1, $r, $c+1],
+        [$r+1, $c-2, $r, $c-1, $r+1, $c-1],
+        [$r+1, $c+1, $r, $c+1, $r+1, $c],
+        [$r+2, $c-1, $r+1, $c-1, $r+1, $c],
     ;
 }
 

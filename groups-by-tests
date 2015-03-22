@@ -186,6 +186,171 @@ sub upgrade(@links, $g1, $g2, $new-group, $logger) {
     }
 }
 
+sub investigate-sacrifice($l1, $l2, $g1 is copy, $g2 is copy, World $world) {
+    my %blockers;
+    for ($l1.pos, $l1.helpers[]).sort(*.c).sort(*.r) -> $pos {
+        my $blocker = $world.unique-blocker-name++;
+        $world.logger.log: "Put blocker ($blocker): $pos";
+        %blockers{$pos}++;
+        $world.board[$pos.r][$pos.c] = "/";
+    }
+    my @invalidated-links = $world.links.grep: -> $l {
+        %blockers{$l.pos} :exists ||
+        (%blockers{$_} :exists for $l.helpers[])
+    };
+    $world.logger.log: "Invalidated links: @invalidated-links».name.join(", ")";
+    my $invalidated-links = set(@invalidated-links».name);
+    $world.links.=grep: { .name !∈ $invalidated-links };
+    my $next2g1 = so any(neighbors($l2.pos)) eq any($g1.positions);
+    my $next2g2 = so any(neighbors($l2.pos)) eq any($g2.positions);
+    die "This is weird -- because if this condition were ever true, why are we here?"
+        if $next2g1 && $next2g2;
+    my $g3;
+    if $next2g1 {
+        $world.logger.log: "{$g1.name} extended with {$l2.pos}";
+        $g1 = Group.new(:name($g1.name), :positions($g1.positions[], $l2.pos));
+    }
+    elsif $next2g2 {
+        $world.logger.log: "{$g2.name} extended with {$l2.pos}";
+        $g2 = Group.new(:name($g2.name), :positions($g2.positions[], $l2.pos));
+    }
+    else {
+        my $name = $world.unique-group-name++;
+        $world.logger.log: "Found chain ($name): {$l2.pos}";
+        $g3 = Group.new(:$name, :positions($l2.pos));
+    }
+
+    # XXX: an argument could be made that this should involve *all* groups, but...
+    # we're not really investigating what new links form between any groups, we're
+    # investigating whether we can unite $g1 and $g2...
+    # Until there's an indication that we need to involve all groups here, let's not
+
+    my @localgroups = $g1, $g2;
+    if defined $g3 {
+        @localgroups.push: $g3;
+    }
+
+    find-links(@localgroups, $world);
+
+    my $orig-g1-name = $g1.name;
+    my $orig-g2-name = $g2.name;
+
+    my %eliminated;
+    my $i1 = 0;
+    GROUP1:
+    for 0..Inf -> $i1 {
+        last if $i1 >= @localgroups;
+
+        my $g1 = @localgroups[$i1];
+        next GROUP1 if %eliminated{$g1.name};
+
+        GROUP2:
+        for $i1+1..Inf -> $i2 {
+            last if $i2 >= @localgroups;
+
+            my $g2 = @localgroups[$i2];
+            next GROUP1 if %eliminated{$g1.name};
+            next GROUP2 if %eliminated{$g2.name};
+
+            sub links-between-groups {
+                $world.links.grep({ .groups[0] === $g1 && .groups[1] === $g2 })
+            }
+
+            sub overlap($l1, $l2) {
+                any($l1.helpers) eq $l2.pos
+                || $l1.pos eq any($l2.helpers)
+                || any($l1.helpers) eq any($l2.helpers)
+            }
+
+            sub non-overlapping(@links) {
+                for ^@links -> $i1 {
+                    my $l1 = @links[$i1];
+                    for $i1+1 ..^ @links -> $i2 {
+                        my $l2 = @links[$i2];
+                        next if overlap($l1, $l2);
+                        my @nl = $l1, $l2;
+                        for $i2+1 ..^ @links -> $i3 {
+                            my $l3 = @links[$i3];
+                            next if overlap($l1, $l3);
+                            next if overlap($l2, $l3);
+                            @nl.push: $l3;
+                        }
+                        return @nl;
+                    }
+                }
+            }
+
+            sub affected-links {
+                my $lbg = set(links-between-groups);
+                $world.links.grep({ $_ !∈ $lbg && (.groups[0] | .groups[1] === $g1 | $g2) });
+            }
+
+            my @lbg = links-between-groups();
+            my @nl = non-overlapping(@lbg);
+            if @nl >= 2 {
+                my $name = $world.unique-group-name++;
+                $world.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
+                my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
+                my $new-group = Group.new(:$name, :@positions);
+                @localgroups.push($new-group);
+                %eliminated{$g1.name}++;
+                %eliminated{$g2.name}++;
+                if $orig-g1-name eq $g1.name && $orig-g2-name eq $g2.name { # XXX: I can imagine situations where this is not true but we should still declare success
+                    $world.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
+                    return $new-group;
+                }
+                upgrade(affected-links(), $g1, $g2, $new-group, $world.logger);
+            }
+            else {
+                SEARCH:
+                for @lbg.sort(+*.helpers) -> $l1 {
+                    for @lbg -> $l2 {
+                        next if $l1 === $l2;
+                        next if $l2.pos eq $l1.pos;
+                        next if $l2.pos eq any($l1.helpers);
+
+                        my $world2 = World.new(
+                            :links($world.links),   # XXX: this may not be enough, since we upgrade the links
+                            :unique-group-name($world.unique-group-name),
+                            :unique-blocker-name($world.unique-blocker-name),
+                            :unique-link-name($world.unique-link-name),
+                            :board( $world.board.map: -> @row { [@row] } ),
+                            :logger( Logger.new ),
+                        );
+                        if investigate-sacrifice($l1, $l2, $g1, $g2, $world2) -> $group {
+                            $world.logger.log: "Sacrificing {$l1.name} to try {$l2.pos}:";
+                            for $world2.logger.result.lines -> $line {
+                                $world.logger.log: "    $line";
+                            }
+                            $world.unique-group-name = $world2.unique-group-name;
+                            $world.unique-blocker-name = $world2.unique-blocker-name;
+                            $world.unique-link-name = $world2.unique-link-name;
+
+                            my $link;
+                            {
+                                my $name = "l" ~ $world.unique-link-name++;
+                                # my @helpers = ($group.links.map({ .pos, .helpers[] }).flat, $world2.necessary-pos[]).sort(*.c).sort(*.r);
+                                my @helpers = $world2.necessary-pos[].sort(*.c).sort(*.r);
+                                $link = Link.new(:$name, :pos($l2.pos), :groups($g1, $g2), :@helpers);
+                                $world.links.push: $link;
+                                $world.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} % {@helpers.join(", ")}";
+                            }
+                            my @nl = $l1, $link;
+                            my $name = $world.unique-group-name++;
+                            $world.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
+                            my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
+                            my $new-group = Group.new(:$name, :@positions);
+                            @localgroups.push($new-group);
+                            $world.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
+                            return $new-group;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 sub infer-groups(Logger:D $logger, $board) {
     my @board = ['.' xx 15] xx 15;
 
@@ -202,171 +367,6 @@ sub infer-groups(Logger:D $logger, $board) {
     my %blockers = $result<blockers>[];
     my $unique-group-name = $result<unique-group-name>;
     my $unique-blocker-name = $result<unique-blocker-name>;
-
-    sub investigate-sacrifice($l1, $l2, $g1 is copy, $g2 is copy, World $world) {
-        my %blockers;
-        for ($l1.pos, $l1.helpers[]).sort(*.c).sort(*.r) -> $pos {
-            my $blocker = $world.unique-blocker-name++;
-            $world.logger.log: "Put blocker ($blocker): $pos";
-            %blockers{$pos}++;
-            $world.board[$pos.r][$pos.c] = "/";
-        }
-        my @invalidated-links = $world.links.grep: -> $l {
-            %blockers{$l.pos} :exists ||
-            (%blockers{$_} :exists for $l.helpers[])
-        };
-        $world.logger.log: "Invalidated links: @invalidated-links».name.join(", ")";
-        my $invalidated-links = set(@invalidated-links».name);
-        $world.links.=grep: { .name !∈ $invalidated-links };
-        my $next2g1 = so any(neighbors($l2.pos)) eq any($g1.positions);
-        my $next2g2 = so any(neighbors($l2.pos)) eq any($g2.positions);
-        die "This is weird -- because if this condition were ever true, why are we here?"
-            if $next2g1 && $next2g2;
-        my $g3;
-        if $next2g1 {
-            $world.logger.log: "{$g1.name} extended with {$l2.pos}";
-            $g1 = Group.new(:name($g1.name), :positions($g1.positions[], $l2.pos));
-        }
-        elsif $next2g2 {
-            $world.logger.log: "{$g2.name} extended with {$l2.pos}";
-            $g2 = Group.new(:name($g2.name), :positions($g2.positions[], $l2.pos));
-        }
-        else {
-            my $name = $world.unique-group-name++;
-            $world.logger.log: "Found chain ($name): {$l2.pos}";
-            $g3 = Group.new(:$name, :positions($l2.pos));
-        }
-
-        # XXX: an argument could be made that this should involve *all* groups, but...
-        # we're not really investigating what new links form between any groups, we're
-        # investigating whether we can unite $g1 and $g2...
-        # Until there's an indication that we need to involve all groups here, let's not
-
-        my @localgroups = $g1, $g2;
-        if defined $g3 {
-            @localgroups.push: $g3;
-        }
-
-        find-links(@localgroups, $world);
-
-        my $orig-g1-name = $g1.name;
-        my $orig-g2-name = $g2.name;
-
-        my %eliminated;
-        my $i1 = 0;
-        GROUP1:
-        for 0..Inf -> $i1 {
-            last if $i1 >= @localgroups;
-
-            my $g1 = @localgroups[$i1];
-            next GROUP1 if %eliminated{$g1.name};
-
-            GROUP2:
-            for $i1+1..Inf -> $i2 {
-                last if $i2 >= @localgroups;
-
-                my $g2 = @localgroups[$i2];
-                next GROUP1 if %eliminated{$g1.name};
-                next GROUP2 if %eliminated{$g2.name};
-
-                sub links-between-groups {
-                    $world.links.grep({ .groups[0] === $g1 && .groups[1] === $g2 })
-                }
-
-                sub overlap($l1, $l2) {
-                    any($l1.helpers) eq $l2.pos
-                    || $l1.pos eq any($l2.helpers)
-                    || any($l1.helpers) eq any($l2.helpers)
-                }
-
-                sub non-overlapping(@links) {
-                    for ^@links -> $i1 {
-                        my $l1 = @links[$i1];
-                        for $i1+1 ..^ @links -> $i2 {
-                            my $l2 = @links[$i2];
-                            next if overlap($l1, $l2);
-                            my @nl = $l1, $l2;
-                            for $i2+1 ..^ @links -> $i3 {
-                                my $l3 = @links[$i3];
-                                next if overlap($l1, $l3);
-                                next if overlap($l2, $l3);
-                                @nl.push: $l3;
-                            }
-                            return @nl;
-                        }
-                    }
-                }
-
-                sub affected-links {
-                    my $lbg = set(links-between-groups);
-                    $world.links.grep({ $_ !∈ $lbg && (.groups[0] | .groups[1] === $g1 | $g2) });
-                }
-
-                my @lbg = links-between-groups();
-                my @nl = non-overlapping(@lbg);
-                if @nl >= 2 {
-                    my $name = $world.unique-group-name++;
-                    $world.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
-                    my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
-                    my $new-group = Group.new(:$name, :@positions);
-                    @localgroups.push($new-group);
-                    %eliminated{$g1.name}++;
-                    %eliminated{$g2.name}++;
-                    if $orig-g1-name eq $g1.name && $orig-g2-name eq $g2.name { # XXX: I can imagine situations where this is not true but we should still declare success
-                        $world.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
-                        return $new-group;
-                    }
-                    upgrade(affected-links(), $g1, $g2, $new-group, $logger);
-                }
-                else {
-                    SEARCH:
-                    for @lbg.sort(+*.helpers) -> $l1 {
-                        for @lbg -> $l2 {
-                            next if $l1 === $l2;
-                            next if $l2.pos eq $l1.pos;
-                            next if $l2.pos eq any($l1.helpers);
-
-                            my $world2 = World.new(
-                                :links($world.links),   # XXX: this may not be enough, since we upgrade the links
-                                :unique-group-name($world.unique-group-name),
-                                :unique-blocker-name($world.unique-blocker-name),
-                                :unique-link-name($world.unique-link-name),
-                                :board( $world.board.map: -> @row { [@row] } ),
-                                :logger( Logger.new ),
-                            );
-                            if investigate-sacrifice($l1, $l2, $g1, $g2, $world2) -> $group {
-                                $world.logger.log: "Sacrificing {$l1.name} to try {$l2.pos}:";
-                                for $world2.logger.result.lines -> $line {
-                                    $world.logger.log: "    $line";
-                                }
-                                $world.unique-group-name = $world2.unique-group-name;
-                                $world.unique-blocker-name = $world2.unique-blocker-name;
-                                $world.unique-link-name = $world2.unique-link-name;
-
-                                my $link;
-                                {
-                                    my $name = "l" ~ $world.unique-link-name++;
-                                    # my @helpers = ($group.links.map({ .pos, .helpers[] }).flat, $world2.necessary-pos[]).sort(*.c).sort(*.r);
-                                    my @helpers = $world2.necessary-pos[].sort(*.c).sort(*.r);
-                                    $link = Link.new(:$name, :pos($l2.pos), :groups($g1, $g2), :@helpers);
-                                    $world.links.push: $link;
-                                    $world.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} % {@helpers.join(", ")}";
-                                }
-                                my @nl = $l1, $link;
-                                my $name = $world.unique-group-name++;
-                                $world.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
-                                my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
-                                my $new-group = Group.new(:$name, :@positions);
-                                @localgroups.push($new-group);
-                                $world.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
-                                return $new-group;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     my $unique-link-name = 1;
     my @links;

@@ -46,6 +46,23 @@ class Group {
     }
 }
 
+class Link {
+    has Str $.name;
+    has Group @.groups;
+    has Pos $.pos;
+    has Pos @.helpers;
+}
+
+class World {
+    has Link @.links;
+    has Pos @.necessary-pos;
+    has Str $.unique-group-name is rw;
+    has Str $.unique-blocker-name is rw;
+    has Int $.unique-link-name is rw;
+    has @.board;
+    has Logger $.logger;
+}
+
 sub is-inside($pos) { 0 <= $pos.r <= 14 && 0 <= $pos.c <= 14 }
 
 my @deltas =
@@ -153,23 +170,6 @@ sub infer-groups(Logger:D $logger, $board) {
     my %blockers = $result<blockers>[];
     my $unique-group-name = $result<unique-group-name>;
     my $unique-blocker-name = $result<unique-blocker-name>;
-
-    my class Link {
-        has Str $.name;
-        has Group @.groups;
-        has Pos $.pos;
-        has Pos @.helpers;
-    }
-
-    my class World {
-        has Link @.links;
-        has Pos @.necessary-pos;
-        has Str $.unique-group-name is rw;
-        has Str $.unique-blocker-name is rw;
-        has Int $.unique-link-name is rw;
-        has @.board;
-        has Logger $.logger;
-    }
 
     sub investigate-sacrifice($l1, $l2, $g1 is copy, $g2 is copy, World $world) {
         my %blockers;

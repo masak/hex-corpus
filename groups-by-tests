@@ -61,6 +61,17 @@ class World {
     has Int $.unique-link-name is rw;
     has @.board;
     has Logger $.logger;
+
+    method clone {
+        return self.new(
+            :@.links,   # XXX: this may not be enough, since we upgrade the links
+            :$.unique-group-name,
+            :$.unique-blocker-name,
+            :$.unique-link-name,
+            :board( @.board.map: -> @row { [@row] } ),
+            :logger( Logger.new ),
+        )
+    }
 }
 
 sub is-inside($pos) { 0 <= $pos.r <= 14 && 0 <= $pos.c <= 14 }
@@ -254,14 +265,7 @@ sub merge-groups(@groups, $world, $orig-g1-name?, $orig-g2-name?) {
                         next if $l2.pos eq $l1.pos;
                         next if $l2.pos eq any($l1.helpers);
 
-                        my $subworld = World.new(
-                            :links($world.links),   # XXX: this may not be enough, since we upgrade the links
-                            :unique-group-name($world.unique-group-name),
-                            :unique-blocker-name($world.unique-blocker-name),
-                            :unique-link-name($world.unique-link-name),
-                            :board( $world.board.map: -> @row { [@row] } ),
-                            :logger( Logger.new ),
-                        );
+                        my $subworld = $world.clone;
                         if investigate-sacrifice($l1, $l2, $g1, $g2, $subworld) -> $group {
                             $world.logger.log: "Sacrificing {$l1.name} to try {$l2.pos}:";
                             for $subworld.logger.result.lines -> $line {

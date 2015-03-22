@@ -117,6 +117,20 @@ sub far-neighbors($pos) {
     ;
 }
 
+sub parse-board($board-spec) {
+    my @board = ['.' xx 15] xx 15;
+
+    for $board-spec.lines.kv -> $i, $line {
+        my $row = $i + 1;
+        for $line.comb(/\S/).kv -> $j, $char {
+            my $col = $j + 1;
+            @board[$row][$col] = $char;
+        }
+    }
+
+    return @board;
+}
+
 sub find-chains($world) {
     my %seen;
 
@@ -369,17 +383,8 @@ sub investigate-sacrifice($l1, $l2, $g1 is copy, $g2 is copy, World $world) {
     return merge-groups(@localgroups, $world, $g1.name, $g2.name);
 }
 
-sub infer-groups(Logger:D $logger, $board) {
-    my @board = ['.' xx 15] xx 15;
-
-    for $board.lines.kv -> $i, $line {
-        my $row = $i + 1;
-        for $line.comb(/\S/).kv -> $j, $char {
-            my $col = $j + 1;
-            @board[$row][$col] = $char;
-        }
-    }
-
+sub infer-groups(Logger:D $logger, $board-spec) {
+    my @board = parse-board($board-spec);
     my $world = World.new(
         :@board,
         :$logger,

@@ -155,6 +155,24 @@ sub find-chains(@board, $logger) {
     };
 }
 
+sub find-links(@groups, $world) {
+    for @groups X @groups -> $g1, $g2 {
+        next if $g1.name ge $g2.name;
+        my @p1 = $g1.plumage($world.board);
+        my @p2 = $g2.plumage($world.board);
+        for @p1 X @p2 -> $f1, $f2 {
+            next unless $f1.pos eq $f2.pos;
+            next if any($f1.helpers[]) eq any($f2.helpers[]);
+
+            my $name = "l" ~ $world.unique-link-name++;
+            my @helpers = $f1.helpers[], $f2.helpers[];
+            $world.links.push: Link.new(:$name, :pos($f1.pos), :groups($g1, $g2), :@helpers);
+            my $aux = @helpers ?? " % " ~ @helpers.sort(*.c).sort(*.r).join(", ") !! "";
+            $world.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): $f1.pos()$aux";
+        }
+    }
+}
+
 sub infer-groups(Logger:D $logger, $board) {
     sub LOG(*@things) { $logger.log([~] @things) }
 
@@ -218,21 +236,7 @@ sub infer-groups(Logger:D $logger, $board) {
             @localgroups.push: $g3;
         }
 
-        for @localgroups X @localgroups -> $g1, $g2 {
-            next if $g1.name ge $g2.name;
-            my @p1 = $g1.plumage($world.board);
-            my @p2 = $g2.plumage($world.board);
-            for @p1 X @p2 -> $f1, $f2 {
-                next unless $f1.pos eq $f2.pos;
-                next if any($f1.helpers[]) eq any($f2.helpers[]);
-
-                my $name = "l" ~ $world.unique-link-name++;
-                my @helpers = $f1.helpers[], $f2.helpers[];
-                $world.links.push: Link.new(:$name, :pos($f1.pos), :groups($g1, $g2), :@helpers);
-                my $aux = @helpers ?? " % " ~ @helpers.sort(*.c).sort(*.r).join(", ") !! "";
-                $world.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): $f1.pos()$aux";
-            }
-        }
+        find-links(@localgroups, $world);
 
         my $orig-g1-name = $g1.name;
         my $orig-g2-name = $g2.name;
@@ -364,20 +368,15 @@ sub infer-groups(Logger:D $logger, $board) {
 
     my $unique-link-name = 1;
     my @links;
-    for @groups X @groups -> $g1, $g2 {
-        next if $g1.name ge $g2.name;
-        my @p1 = $g1.plumage(@board);
-        my @p2 = $g2.plumage(@board);
-        for @p1 X @p2 -> $f1, $f2 {
-            next unless $f1.pos eq $f2.pos;
-            next if any($f1.helpers[]) eq any($f2.helpers[]);
-
-            my $name = "l" ~ $unique-link-name++;
-            my @helpers = $f1.helpers[], $f2.helpers[];
-            @links.push: Link.new(:$name, :pos($f1.pos), :groups($g1, $g2), :@helpers);
-            my $aux = @helpers ?? " % " ~ @helpers.sort(*.c).sort(*.r).join(", ") !! "";
-            LOG "Weak {$g1.name}+{$g2.name} link ($name): $f1.pos()$aux";
-        }
+    {
+        my $world = World.new(
+            :unique-link-name($unique-link-name),
+            :board( @board.map: -> @row { [@row] } ),
+            :$logger,
+        );
+        find-links(@groups, $world);
+        @links = $world.links[];
+        $unique-link-name = $world.unique-link-name;
     }
 
     my %eliminated;

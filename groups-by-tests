@@ -173,6 +173,19 @@ sub find-links(@groups, $world) {
     }
 }
 
+sub upgrade(@links, $g1, $g2, $new-group, $logger) {
+    for @links {
+        my $name = .name;
+        my $old-groups = .groups».name.join("+");
+        if .groups[0] === $g1 | $g2 {
+            .groups[0] = .groups[1]; # so they are still ordered by name
+        }
+        .groups[1] = $new-group;
+        my $new-groups = .groups».name.join("+");
+        $logger.log: "    Upgrading $name: $old-groups -> $new-groups";
+    }
+}
+
 sub infer-groups(Logger:D $logger, $board) {
     sub LOG(*@things) { $logger.log([~] @things) }
 
@@ -305,16 +318,7 @@ sub infer-groups(Logger:D $logger, $board) {
                         $world.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
                         return $new-group;
                     }
-                    for affected-links() {
-                        my $name = .name;
-                        my $old-groups = .groups».name.join("+");
-                        if .groups[0] === $g1 | $g2 {
-                            .groups[0] = .groups[1]; # so they are still ordered by name
-                        }
-                        .groups[1] = $new-group;
-                        my $new-groups = .groups».name.join("+");
-                        $world.logger.log: "Upgrading $name: $old-groups -> $new-groups";
-                    }
+                    upgrade(affected-links(), $g1, $g2, $new-group, $logger);
                 }
                 else {
                     SEARCH:
@@ -325,7 +329,7 @@ sub infer-groups(Logger:D $logger, $board) {
                             next if $l2.pos eq any($l1.helpers);
 
                             my $world2 = World.new(
-                                :links($world.links),
+                                :links($world.links),   # XXX: this may not be enough, since we upgrade the links
                                 :unique-group-name($world.unique-group-name),
                                 :unique-blocker-name($world.unique-blocker-name),
                                 :unique-link-name($world.unique-link-name),
@@ -439,16 +443,7 @@ sub infer-groups(Logger:D $logger, $board) {
                 @groups.push($new-group);
                 %eliminated{$g1.name}++;
                 %eliminated{$g2.name}++;
-                for affected-links() {
-                    my $name = .name;
-                    my $old-groups = .groups».name.join("+");
-                    if .groups[0] === $g1 | $g2 {
-                        .groups[0] = .groups[1]; # so they are still ordered by name
-                    }
-                    .groups[1] = $new-group;
-                    my $new-groups = .groups».name.join("+");
-                    LOG "    Upgrading $name: $old-groups -> $new-groups";
-                }
+                upgrade(affected-links(), $g1, $g2, $new-group, $logger);
             }
             else {
                 SEARCH:
@@ -458,7 +453,7 @@ sub infer-groups(Logger:D $logger, $board) {
                         next if $l2.pos eq $l1.pos;
                         next if $l2.pos eq any($l1.helpers);
                         my $world = World.new(
-                            :@links,
+                            :@links,        # XXX: this may not be enough, since we upgrade the links
                             :$unique-group-name,
                             :$unique-blocker-name,
                             :$unique-link-name,
@@ -490,16 +485,7 @@ sub infer-groups(Logger:D $logger, $board) {
                             @groups.push($new-group);
                             %eliminated{$g1.name}++;
                             %eliminated{$g2.name}++;
-                            for affected-links() {
-                                my $name = .name;
-                                my $old-groups = .groups».name.join("+");
-                                if .groups[0] === $g1 | $g2 {
-                                    .groups[0] = .groups[1]; # so they are still ordered by name
-                                }
-                                .groups[1] = $new-group;
-                                my $new-groups = .groups».name.join("+");
-                                LOG "    Upgrading $name: $old-groups -> $new-groups";
-                            }
+                            upgrade(affected-links(), $g1, $g2, $new-group, $logger);
                             last SEARCH;
                         }
                     }

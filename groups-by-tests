@@ -46,35 +46,9 @@ class Pos {
 
 }
 
-class Feather {
-    has Pos $.pos;
-    has Pos @.helpers;
-}
-
 class Group {
     has Str $.name;
     has @.positions;
-
-    method plumage(@board) {
-        my %plumage;
-        for @.positions -> $pos {
-            for $pos.neighbors -> $n {
-                my ($r, $c) = $n.r, $n.c;
-                next unless @board[$r][$c] eq '.';
-                %plumage{"$r;$c"} = Feather.new(:pos($n));
-            }
-            for $pos.far-neighbors -> @nhh {
-                my ($n, $h1, $h2) = @nhh;
-                my ($r, $c) = $n.r, $n.c;
-                next unless @board[$r][$c] eq '.';
-                next unless @board[$h1.r][$h1.c] eq '.';
-                next unless @board[$h2.r][$h2.c] eq '.';
-                next if %plumage{"$r;$c"} :exists;
-                %plumage{"$r;$c%$h1,$h2"} = Feather.new(:pos($n), :helpers($h1, $h2));
-            }
-        }
-        return %plumage.values.sort(*.pos.c).sort(*.pos.r);
-    }
 }
 
 class Link {
@@ -154,10 +128,36 @@ class World {
     }
 
     method find-links(@groups) {
+        sub plumage($group) {
+            my class Feather {
+                has Pos $.pos;
+                has Pos @.helpers;
+            }
+
+            my %plumage;
+            for $group.positions[] -> $pos {
+                for $pos.neighbors -> $n {
+                    my ($r, $c) = $n.r, $n.c;
+                    next unless $.board[$r][$c] eq '.';
+                    %plumage{"$r;$c"} = Feather.new(:pos($n));
+                }
+                for $pos.far-neighbors -> @nhh {
+                    my ($n, $h1, $h2) = @nhh;
+                    my ($r, $c) = $n.r, $n.c;
+                    next unless $.board[$r][$c] eq '.';
+                    next unless $.board[$h1.r][$h1.c] eq '.';
+                    next unless $.board[$h2.r][$h2.c] eq '.';
+                    next if %plumage{"$r;$c"} :exists;
+                    %plumage{"$r;$c%$h1,$h2"} = Feather.new(:pos($n), :helpers($h1, $h2));
+                }
+            }
+            return %plumage.values.sort(*.pos.c).sort(*.pos.r);
+        }
+
         for @groups X @groups -> $g1, $g2 {
             next if $g1.name ge $g2.name;
-            my @p1 = $g1.plumage($.board);
-            my @p2 = $g2.plumage($.board);
+            my @p1 = plumage($g1);
+            my @p2 = plumage($g2);
             for @p1 X @p2 -> $f1, $f2 {
                 next unless $f1.pos eq $f2.pos;
                 next if any($f1.helpers[]) eq any($f2.helpers[]);

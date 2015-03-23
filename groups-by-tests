@@ -13,6 +13,37 @@ class Pos {
     has $.c;
 
     method Str { "($.r, $.c)" }
+
+    sub is-inside($pos) { 0 <= $pos.r <= 14 && 0 <= $pos.c <= 14 }
+
+    my @deltas =
+             [-1,  0], [-1, +1],
+        [ 0, -1],           [ 0, +1],
+             [+1, -1], [+1,  0],
+    ;
+
+    method neighbors {
+        grep &is-inside,
+            map -> [$dr, $dc] {
+                self.new(:r($.r + $dr), :c($.c + $dc))
+            },
+            @deltas;
+    }
+
+    method far-neighbors {
+        grep *.[0].&is-inside,
+            map -> [$rD, $cD, $r1, $c1, $r2, $c2] {
+                [self.new(:r($rD), :c($cD)), Pos.new(:r($r1), :c($c1)), Pos.new(:r($r2), :c($c2))]
+            },
+            [$.r-2, $.c+1, $.r-1, $.c,   $.r-1, $.c+1],
+            [$.r-1, $.c-1, $.r-1, $.c,   $.r,   $.c-1],
+            [$.r-1, $.c+2, $.r-1, $.c+1, $.r,   $.c+1],
+            [$.r+1, $.c-2, $.r,   $.c-1, $.r+1, $.c-1],
+            [$.r+1, $.c+1, $.r,   $.c+1, $.r+1, $.c  ],
+            [$.r+2, $.c-1, $.r+1, $.c-1, $.r+1, $.c  ],
+        ;
+    }
+
 }
 
 class Feather {
@@ -27,12 +58,12 @@ class Group {
     method plumage(@board) {
         my %plumage;
         for @.positions -> $pos {
-            for neighbors($pos) -> $n {
+            for $pos.neighbors -> $n {
                 my ($r, $c) = $n.r, $n.c;
                 next unless @board[$r][$c] eq '.';
                 %plumage{"$r;$c"} = Feather.new(:pos($n));
             }
-            for far-neighbors($pos) -> @nhh {
+            for $pos.far-neighbors -> @nhh {
                 my ($n, $h1, $h2) = @nhh;
                 my ($r, $c) = $n.r, $n.c;
                 next unless @board[$r][$c] eq '.';
@@ -83,40 +114,6 @@ class World {
     }
 }
 
-sub is-inside($pos) { 0 <= $pos.r <= 14 && 0 <= $pos.c <= 14 }
-
-my @deltas =
-         [-1,  0], [-1, +1],
-    [ 0, -1],           [ 0, +1],
-         [+1, -1], [+1,  0],
-;
-
-sub neighbors($pos) {
-    my ($r, $c) = $pos.r, $pos.c;
-
-    return grep &is-inside,
-        map -> [$dr, $dc] {
-            Pos.new(:r($r + $dr), :c($c + $dc))
-        },
-        @deltas;
-}
-
-sub far-neighbors($pos) {
-    my ($r, $c) = $pos.r, $pos.c;
-
-    return grep *.[0].&is-inside,
-        map -> [$rD, $cD, $r1, $c1, $r2, $c2] {
-            [Pos.new(:r($rD), :c($cD)), Pos.new(:r($r1), :c($c1)), Pos.new(:r($r2), :c($c2))]
-        },
-        [$r-2, $c+1, $r-1, $c, $r-1, $c+1],
-        [$r-1, $c-1, $r-1, $c, $r, $c-1],
-        [$r-1, $c+2, $r-1, $c+1, $r, $c+1],
-        [$r+1, $c-2, $r, $c-1, $r+1, $c-1],
-        [$r+1, $c+1, $r, $c+1, $r+1, $c],
-        [$r+2, $c-1, $r+1, $c-1, $r+1, $c],
-    ;
-}
-
 sub parse-board($board-spec) {
     my @board = ['.' xx 15] xx 15;
 
@@ -143,7 +140,7 @@ sub find-chains($world) {
             next if %seen{$coords}++;
 
             %chain{$coords} = $pos;
-            for neighbors($pos) -> $n {
+            for $pos.neighbors -> $n {
                 if $world.board[$n.r][$n.c] eq "#" && !%seen{~$n} {
                     @queue.push: $n;
                 }
@@ -349,8 +346,8 @@ sub investigate-sacrifice($l1, $l2, $g1 is copy, $g2 is copy, World $world) {
     $world.logger.log: "Invalidated links: @invalidated-links».name.join(", ")";
     my $invalidated-links = set(@invalidated-links».name);
     $world.links.=grep: { .name !∈ $invalidated-links };
-    my $next2g1 = so any(neighbors($l2.pos)) eq any($g1.positions);
-    my $next2g2 = so any(neighbors($l2.pos)) eq any($g2.positions);
+    my $next2g1 = so any($l2.pos.neighbors) eq any($g1.positions);
+    my $next2g2 = so any($l2.pos.neighbors) eq any($g2.positions);
     die "This is weird -- because if this condition were ever true, why are we here?"
         if $next2g1 && $next2g2;
     my $g3;

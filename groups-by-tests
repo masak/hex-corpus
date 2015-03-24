@@ -86,6 +86,10 @@ class World {
         $!unique-link-name = $subworld.unique-link-name;
     }
 
+    sub collated(@positions) {
+        @positions.sort(*.c).sort(*.r).join(", ")
+    }
+
     method find-chains {
         my %seen;
 
@@ -118,7 +122,7 @@ class World {
                     my $name = $!unique-group-name++;
                     my @positions = find-whole-chain($r, $c);
                     @groups.push: Group.new(:$name, :@positions);
-                    $.logger.log: "Found chain ($name): @positions.sort(*.c).sort(*.r).join(", ")";
+                    $.logger.log: "Found chain ($name): {collated @positions}";
                 }
             }
         }
@@ -164,7 +168,7 @@ class World {
                 my $name = "l" ~ $!unique-link-name++;
                 my @helpers = $f1.helpers[], $f2.helpers[];
                 $.links.push: Link.new(:$name, :pos($f1.pos), :groups($g1, $g2), :@helpers);
-                my $aux = @helpers ?? " % " ~ @helpers.sort(*.c).sort(*.r).join(", ") !! "";
+                my $aux = @helpers ?? " % " ~ collated(@helpers) !! "";
                 $.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): $f1.pos()$aux";
             }
         }
@@ -221,7 +225,7 @@ class World {
         my @nl = non-overlapping(@lbg);
         if @nl >= 2 {
             my $name = $!unique-group-name++;
-            my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
+            my @positions = $g1.positions[], $g2.positions[];
             my $new-group = Group.new(:$name, :@positions);
             $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
             @groups.push($new-group);
@@ -253,15 +257,14 @@ class World {
                         my $link;
                         {
                             my $name = "l" ~ $!unique-link-name++;
-                            # my @helpers = ($group.links.map({ .pos, .helpers[] }).flat, $subworld.necessary-pos[]).sort(*.c).sort(*.r);
-                            my @helpers = $subworld.necessary-pos[].sort(*.c).sort(*.r);
+                            my @helpers = $subworld.necessary-pos[];
                             $link = Link.new(:$name, :pos($l2.pos), :groups($g1, $g2), :@helpers);
                             $.links.push: $link;
-                            $.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} % {@helpers.join(", ")}";
+                            $.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} % {collated @helpers}";
                         }
                         my @nl = $l1, $link;
                         my $name = $!unique-group-name++;
-                        my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
+                        my @positions = $g1.positions[], $g2.positions[];
                         my $new-group = Group.new(:$name, :@positions);
                         $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
                         @groups.push($new-group);

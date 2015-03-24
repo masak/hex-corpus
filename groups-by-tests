@@ -222,9 +222,9 @@ class World {
         my @nl = non-overlapping(@lbg);
         if @nl >= 2 {
             my $name = $.unique-group-name++;
-            $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
             my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
             my $new-group = Group.new(:$name, :@positions);
+            $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
             @groups.push($new-group);
             %eliminated{$g1.name}++;
             %eliminated{$g2.name}++;
@@ -262,9 +262,9 @@ class World {
                         }
                         my @nl = $l1, $link;
                         my $name = $.unique-group-name++;
-                        $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
                         my @positions = ($g1.positions[], $g2.positions[]).sort(*.c).sort(*.r);
                         my $new-group = Group.new(:$name, :@positions);
+                        $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
                         @groups.push($new-group);
                         if $orig-g1-name {
                             @.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
@@ -337,17 +337,17 @@ class World {
             if $next2g1 && $next2g2;
         my $g3;
         if $next2g1 {
-            $.logger.log: "{$g1.name} extended with {$l2.pos}";
             $g1 = Group.new(:name($g1.name), :positions($g1.positions[], $l2.pos));
+            $.logger.log: "{$g1.name} extended with {$l2.pos}";
         }
         elsif $next2g2 {
-            $.logger.log: "{$g2.name} extended with {$l2.pos}";
             $g2 = Group.new(:name($g2.name), :positions($g2.positions[], $l2.pos));
+            $.logger.log: "{$g2.name} extended with {$l2.pos}";
         }
         else {
             my $name = $.unique-group-name++;
-            $.logger.log: "Found chain ($name): {$l2.pos}";
             $g3 = Group.new(:$name, :positions($l2.pos));
+            $.logger.log: "Found chain ($name): {$l2.pos}";
         }
 
         # XXX: an argument could be made that this should involve *all* groups, but...

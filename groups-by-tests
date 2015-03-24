@@ -43,7 +43,6 @@ class Pos {
             [$.r+2, $.c-1, $.r+1, $.c-1, $.r+1, $.c  ],
         ;
     }
-
 }
 
 class Group {

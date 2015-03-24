@@ -106,9 +106,9 @@ class World {
         );
     }
 
-    method extend-group($g, $l) {
-        $.logger.log: "{$g.name} extended with {$l.pos}";
-        return Group.new(:name($g.name), :positions($g.positions[], $l.pos));
+    method extend-group($g, $pos) {
+        $.logger.log: "{$g.name} extended with {$pos}";
+        return Group.new(:name($g.name), :positions($g.positions[], $pos));
     }
 
     method find-chains {
@@ -256,23 +256,22 @@ class World {
         else {
             SEARCH:
             for @lbg.sort(+*.helpers) -> $l1 {
-                for @lbg -> $l2 {
-                    next if $l1 === $l2;
-                    next if $l2.pos eq $l1.pos;
-                    next if $l2.pos eq any($l1.helpers);
+                for @lbg».pos -> $pos {
+                    next if $pos eq $l1.pos;
+                    next if $pos eq any($l1.helpers);
 
                     my $subworld = self.clone;
-                    if $subworld.investigate-sacrifice($l1, $l2, $g1, $g2) -> $group {
-                        $.logger.log: "Sacrificing {$l1.name} to try {$l2.pos}:";
+                    if $subworld.investigate-sacrifice($l1, $pos, $g1, $g2) -> $group {
+                        $.logger.log: "Sacrificing {$l1.name} to try {$pos}:";
                         self.reabsorb($subworld);
 
                         my $link;
                         {
                             my $name = "l" ~ $!unique-link-name++;
                             my @helpers = $subworld.necessary-pos[];
-                            $link = Link.new(:$name, :pos($l2.pos), :groups($g1, $g2), :@helpers);
+                            $link = Link.new(:$name, :$pos, :groups($g1, $g2), :@helpers);
                             $.links.push: $link;
-                            $.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} % {collated @helpers}";
+                            $.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$pos} % {collated @helpers}";
                         }
                         my @nl = $l1, $link;
                         my $new-group = self.create-combined-group($g1, $g2, @nl);
@@ -327,7 +326,7 @@ class World {
         return;
     }
 
-    method investigate-sacrifice($l1, $l2, $g1 is copy, $g2 is copy) {
+    method investigate-sacrifice($l1, $pos, $g1 is copy, $g2 is copy) {
         my %blockers;
         for ($l1.pos, $l1.helpers[]).sort(*.c).sort(*.r) -> $pos {
             my $blocker = $!unique-blocker-name++;
@@ -342,19 +341,19 @@ class World {
         $.logger.log: "Invalidated links: @invalidated-links».name.join(", ")";
         my $invalidated-links = set(@invalidated-links».name);
         @.links.=grep: { .name !∈ $invalidated-links };
-        my $next2g1 = so any($l2.pos.neighbors) eq any($g1.positions);
-        my $next2g2 = so any($l2.pos.neighbors) eq any($g2.positions);
+        my $next2g1 = so any($pos.neighbors) eq any($g1.positions);
+        my $next2g2 = so any($pos.neighbors) eq any($g2.positions);
         die "This is weird -- because if this condition were ever true, why are we here?"
             if $next2g1 && $next2g2;
         my @localgroups;
         if $next2g1 {
-            $g1 = self.extend-group($g1, $l2);
+            $g1 = self.extend-group($g1, $pos);
         }
         elsif $next2g2 {
-            $g2 = self.extend-group($g2, $l2);
+            $g2 = self.extend-group($g2, $pos);
         }
         else {
-            my $g3 = self.create-group([$l2.pos], "Found chain <name>: <name>");
+            my $g3 = self.create-group([$pos], "Found chain <name>: <name>");
             @localgroups.push: $g3;
         }
         @localgroups.unshift: $g1, $g2;

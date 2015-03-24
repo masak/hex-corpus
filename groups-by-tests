@@ -346,7 +346,7 @@ class World {
         my $next2g2 = so any($l2.pos.neighbors) eq any($g2.positions);
         die "This is weird -- because if this condition were ever true, why are we here?"
             if $next2g1 && $next2g2;
-        my $g3;
+        my @localgroups;
         if $next2g1 {
             $g1 = self.extend-group($g1, $l2);
         }
@@ -354,21 +354,17 @@ class World {
             $g2 = self.extend-group($g2, $l2);
         }
         else {
-            $g3 = self.create-group([$l2.pos], "Found chain <name>: <name>");
+            my $g3 = self.create-group([$l2.pos], "Found chain <name>: <name>");
+            @localgroups.push: $g3;
         }
+        @localgroups.unshift: $g1, $g2;
 
         # XXX: an argument could be made that this should involve *all* groups, but...
         # we're not really investigating what new links form between any groups, we're
         # investigating whether we can unite $g1 and $g2...
         # Until there's an indication that we need to involve all groups here, let's not
 
-        my @localgroups = $g1, $g2;
-        if defined $g3 {
-            @localgroups.push: $g3;
-        }
-
         self.find-links(@localgroups);
-
         return self.merge-groups($g1.name, $g2.name, @localgroups);
     }
 }

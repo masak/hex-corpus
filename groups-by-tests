@@ -90,6 +90,25 @@ class World {
         @positions.sort(*.c).sort(*.r).join(", ")
     }
 
+    method create-group(@positions, $message) {
+        my $name = $!unique-group-name++;
+        $.logger.log: $message.subst("<name>", $name).subst("<pos>", collated(@positions));
+        return Group.new(:$name, :@positions);
+    }
+
+    method create-combined-group($g1, $g2, @nl) {
+        my @positions = $g1.positions[], $g2.positions[];
+        return self.create-group(
+            @positions,
+            "Forming group (<name>): $g1.name(), $g2.name() || @nl».name.join(", ")"
+        );
+    }
+
+    method extend-group($g, $l) {
+        $.logger.log: "{$g.name} extended with {$l.pos}";
+        return Group.new(:name($g.name), :positions($g.positions[], $l.pos));
+    }
+
     method find-chains {
         my %seen;
 
@@ -119,10 +138,7 @@ class World {
                     $.logger.log: "Found blocker ($name): ($r, $c)";
                 }
                 elsif $piece eq "#" && !%seen{"($r, $c)"} {
-                    my $name = $!unique-group-name++;
-                    my @positions = find-whole-chain($r, $c);
-                    @groups.push: Group.new(:$name, :@positions);
-                    $.logger.log: "Found chain ($name): {collated @positions}";
+                    @groups.push: self.create-group(find-whole-chain($r, $c), "Found chain (<name>): <pos>");
                 }
             }
         }
@@ -224,10 +240,7 @@ class World {
         my @lbg = links-between-groups();
         my @nl = non-overlapping(@lbg);
         if @nl >= 2 {
-            my $name = $!unique-group-name++;
-            my @positions = $g1.positions[], $g2.positions[];
-            my $new-group = Group.new(:$name, :@positions);
-            $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
+            my $new-group = self.create-combined-group($g1, $g2, @nl);
             @groups.push($new-group);
             %eliminated{$g1.name}++;
             %eliminated{$g2.name}++;
@@ -263,10 +276,7 @@ class World {
                             $.logger.log: "Weak {$g1.name}+{$g2.name} link ($name): {$l2.pos} % {collated @helpers}";
                         }
                         my @nl = $l1, $link;
-                        my $name = $!unique-group-name++;
-                        my @positions = $g1.positions[], $g2.positions[];
-                        my $new-group = Group.new(:$name, :@positions);
-                        $.logger.log: "Forming group ($name): $g1.name(), $g2.name() || @nl».name.join(", ")";
+                        my $new-group = self.create-combined-group($g1, $g2, @nl);
                         @groups.push($new-group);
                         if $orig-g1-name {
                             @.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
@@ -339,17 +349,13 @@ class World {
             if $next2g1 && $next2g2;
         my $g3;
         if $next2g1 {
-            $g1 = Group.new(:name($g1.name), :positions($g1.positions[], $l2.pos));
-            $.logger.log: "{$g1.name} extended with {$l2.pos}";
+            $g1 = self.extend-group($g1, $l2);
         }
         elsif $next2g2 {
-            $g2 = Group.new(:name($g2.name), :positions($g2.positions[], $l2.pos));
-            $.logger.log: "{$g2.name} extended with {$l2.pos}";
+            $g2 = self.extend-group($g2, $l2);
         }
         else {
-            my $name = $!unique-group-name++;
-            $g3 = Group.new(:$name, :positions($l2.pos));
-            $.logger.log: "Found chain ($name): {$l2.pos}";
+            $g3 = self.create-group([$l2.pos], "Found chain <name>: <name>");
         }
 
         # XXX: an argument could be made that this should involve *all* groups, but...

@@ -189,6 +189,23 @@ class World {
         }
     }
 
+    sub overlap($l1, $l2) {
+        $l1.pos eq $l2.pos
+        || any($l1.helpers) eq $l2.pos
+        || $l1.pos eq any($l2.helpers)
+        || any($l1.helpers) eq any($l2.helpers)
+    }
+
+    sub invalidate(@links, @nl, $logger) {
+        # silently remove the @nl links themselves
+        @links.=grep: -> $l { $l !∈ @nl };
+        my @invalid = @links.grep: -> $l { overlap($l, any(@nl)) };
+        if @invalid {
+            $logger.log: "    Invalidating @invalid».name.join(", ")";
+            @links.=grep: -> $l { $l !∈ @invalid };
+        }
+    }
+
     sub upgrade(@links, $g1, $g2, $new-group, $logger) {
         for @links {
             my $name = .name;
@@ -205,12 +222,6 @@ class World {
     method try-merging-two-groups($g1, $g2, %eliminated, $orig-g1-name?, $orig-g2-name?) {
         sub links-between-groups {
             $.links.grep({ .groups[0] === $g1 && .groups[1] === $g2 })
-        }
-
-        sub overlap($l1, $l2) {
-            any($l1.helpers) eq $l2.pos
-            || $l1.pos eq any($l2.helpers)
-            || any($l1.helpers) eq any($l2.helpers)
         }
 
         sub non-overlapping(@links) {
@@ -251,6 +262,7 @@ class World {
                 @.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
                 return $new-group;
             }
+            invalidate(self.links, @nl, $.logger);
             upgrade(affected-links(), $g1, $g2, $new-group, $.logger);
         }
         else {
@@ -283,6 +295,7 @@ class World {
                         else {
                             %eliminated{$g1.name}++;
                             %eliminated{$g2.name}++;
+                            invalidate(self.links, @nl, $.logger);
                             upgrade(affected-links(), $g1, $g2, $new-group, $.logger);
                             last SEARCH;
                         }
@@ -709,6 +722,7 @@ given Logger.new -> $logger {
         Weak A+B link (l5): (7, 4) % (6, 4), (6, 5)
         Weak A+B link (l6): (7, 4) % (6, 4), (7, 3)
         Forming group (C): A, B || l1, l6
+            Invalidating l2, l3, l4, l5
         Resulting groups: C
         LOG
 }
@@ -749,6 +763,7 @@ given Logger.new -> $logger {
             Forming group (C): A, B || l7, l9
         Weak A+B link (l10): (7, 5) % (6, 4), (6, 5), (7, 3), (7, 4)
         Forming group (D): A, B || l3, l10
+            Invalidating l1, l2, l4, l5
         Resulting groups: D
         LOG
 }
@@ -807,6 +822,7 @@ given Logger.new -> $logger {
             Forming group (E): A, B || l7, l17
         Weak A+B link (l18): (7, 7) % (6, 4), (6, 5), (6, 6), (6, 7), (7, 3), (7, 4), (7, 5), (7, 6)
         Forming group (F): A, B || l3, l18
+            Invalidating l1, l2, l4, l5
         Resulting groups: F
         LOG
 }
@@ -843,13 +859,13 @@ given Logger.new -> $logger {
         Weak C+D link (l8): (6, 9)
         Weak C+D link (l9): (7, 9)
         Forming group (E): A, B || l1, l2
+            Invalidating l5
             Upgrading l3: A+C -> C+E
             Upgrading l4: A+C -> C+E
-            Upgrading l5: B+C -> C+E
         Forming group (F): C, D || l6, l9
+            Invalidating l7, l8
             Upgrading l3: C+E -> E+F
             Upgrading l4: C+E -> E+F
-            Upgrading l5: C+E -> E+F
         Forming group (G): E, F || l3, l4
         Resulting groups: G
         LOG

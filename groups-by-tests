@@ -855,6 +855,55 @@ given Logger.new -> $logger {
         LOG
 }
 
+given Logger.new -> $logger {
+    my $board = infer-groups($logger, q:to/BOARD/);
+        . . . . . . . . . . . . .
+         . . . . . . . . . . . . .
+          . . . . . . . . . . # . .
+           . . . . . . . . . # . . .
+            . . . . . . . . . # . . .
+             . . . . . . . . . . . # .
+              . . . . . . . . . # . . .
+               . . . . . . . . . . . . .
+                . . . . . . . . . . . . .
+                 . . . . . . . . . . . . .
+                  . . . . . . . . . . . . .
+                   . . . . . . . . . . . . .
+                    . . . . . . . . . . . . .
+        BOARD
+
+    empty-diff $logger.result, q:to/LOG/, "three chains joined by links and tether";
+        Found chain (A): (3, 11), (4, 10), (5, 10)
+        Found chain (B): (6, 12)
+        Found chain (C): (7, 10)
+        Weak A+B link (l1): (5, 11) % (5, 12), (6, 11)
+        Weak A+B link (l2): (6, 11) % (5, 11), (6, 10)
+        Weak A+C link (l3): (5, 11) % (6, 10), (6, 11)
+        Weak A+C link (l4): (6, 9) % (6, 10), (7, 9)
+        Weak A+C link (l5): (6, 10)
+        Weak A+C link (l6): (6, 11) % (5, 11), (6, 10)
+        Weak A+C link (l7): (7, 9) % (6, 9), (6, 10)
+        Weak B+C link (l8): (6, 11)
+        Weak B+C link (l9): (7, 11)
+        Forming group (D): B, C || l8, l9
+            Invalidating l1, l2, l3, l6
+            Upgrading l4: A+C -> A+D
+            Upgrading l5: A+C -> A+D
+            Upgrading l7: A+C -> A+D
+        Sacrificing l5 to try (5, 12):
+            Put blocker (b1): (6, 10)
+            Invalidated links: l2, l3, l4, l5, l6, l7
+            D extended with (5, 12)
+            Weak A+D link (l10): (4, 11) % (4, 12), (5, 11)
+            Weak A+D link (l11): (4, 12) % (3, 12), (4, 11)
+            Weak A+D link (l12): (5, 11)
+            Forming group (E): A, D || l11, l12
+        Weak A+D link (l13): (5, 12) % (3, 12), (4, 11), (4, 12), (5, 11)
+        Forming group (F): A, D || l5, l13
+        Resulting groups: F
+        LOG
+}
+
 done;
 exit;
 
@@ -912,58 +961,6 @@ given Logger.new -> $logger {
 
 done;
 exit;
-
-given Logger.new -> $logger {
-    my $board = infer-groups($logger, q:to/BOARD/);
-        . . . . . . . . . . . . .
-         . . . . . . . . . . . . .
-          . . . . . . . . . . # . .
-           . . . . . . . . . # . . .
-            . . . . . . . . . # . . .
-             . . . . . . . . . . . # .
-              . . . . . . . . . # . . .
-               . . . . . . . . . . . . .
-                . . . . . . . . . . . . .
-                 . . . . . . . . . . . . .
-                  . . . . . . . . . . . . .
-                   . . . . . . . . . . . . .
-                    . . . . . . . . . . . . .
-        BOARD
-
-    empty-diff $logger.result, q:to/LOG/;
-        Found chain (A): (3, 11), (4, 10), (5, 10)
-        Found chain (B): (6, 12)
-        Found chain (C): (7, 10)
-        Weak A+B link (l1): (5, 11) % (5, 12), (6, 11)
-        Weak A+B link (l2): (6, 11) % (5, 11), (6, 10)
-        Weak A+C link (l3): (5, 11) % (6, 10), (6, 11)
-        Weak A+C link (l4): (6, 9) % (6, 10), (7, 9)
-        Weak A+C link (l5): (6, 10)
-        Weak A+C link (l6): (6, 11) % (5, 11), (6, 10)
-        Weak A+C link (l7): (7, 9) % (6, 9), (6, 10)
-        Weak B+C link (l8): (6, 11)
-        Weak B+C link (l9): (7, 11)
-        Forming group (D): B, C || l8, l9
-            Upgrading l1: A+B -> A+D
-            Upgrading l2: A+B -> A+D
-            Upgrading l3: A+C -> A+D
-            Upgrading l4: A+C -> A+D
-            Upgrading l5: A+C -> A+D
-            Upgrading l6: A+C -> A+D
-            Upgrading l7: A+C -> A+D
-        Sacrificing l5 to try (5, 12):
-            Put blocker (b1): (6, 10)
-            Invalidated links: l2, l3, l4, l5, l6, l7
-            D extended with (5, 12)
-            Weak A+D link (l10): (4, 11) % (4, 12), (5, 11)
-            Weak A+D link (l11): (4, 12) % (3, 12), (4, 11)
-            Weak A+D link (l12): (5, 11)
-            Forming group (E): A, D || l11, l12
-        Weak A+D link (l13): (5, 12) % (3, 12), (4, 11), (4, 12), (5, 11)
-        Forming group (F): A, D || l5, l13
-        Resulting groups: F
-        LOG
-}
 
 given Logger.new -> $logger {
     my $board = infer-groups($logger, q:to/BOARD/);

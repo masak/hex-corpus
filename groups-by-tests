@@ -47,7 +47,8 @@ class Pos {
 
 class Group {
     has Str $.name;
-    has @.positions;
+    has @.stones;
+    has @.holes;
 }
 
 class Link {
@@ -92,23 +93,25 @@ class World {
         @positions.sort(*.c).sort(*.r).join(", ")
     }
 
-    method create-group(@positions, $message) {
+    method create-group(@stones, @holes, $message) {
         my $name = $!unique-group-name++;
-        $.logger.log: $message.subst("<name>", $name).subst("<pos>", collated(@positions));
-        return Group.new(:$name, :@positions);
+        $.logger.log: $message.subst("<name>", $name).subst("<pos>", collated(@stones));
+        return Group.new(:$name, :@stones, :@holes);
     }
 
     method create-combined-group($g1, $g2, @nl) {
-        my @positions = $g1.positions[], $g2.positions[];
+        my @stones = $g1.stones[], $g2.stones[];
+        my @holes = $g1.holes[], $g2.holes[], @nl.map({ .pos, .helpers[] }).flat;
         return self.create-group(
-            @positions,
+            @stones,
+            @holes,
             "Forming group (<name>): $g1.name(), $g2.name() || @nl».name.join(", ")"
         );
     }
 
     method extend-group($g, $pos) {
         $.logger.log: "{$g.name} extended with {$pos}";
-        return Group.new(:name($g.name), :positions($g.positions[], $pos));
+        return Group.new(:name($g.name), :stones($g.stones[], $pos));
     }
 
     method find-chains {
@@ -139,7 +142,7 @@ class World {
                     $.logger.log: "Found blocker ($name): ($r, $c)";
                 }
                 elsif $piece eq "#" && !%seen{"($r, $c)"} {
-                    @.groups.push: self.create-group(find-whole-chain($r, $c), "Found chain (<name>): <pos>");
+                    @.groups.push: self.create-group(find-whole-chain($r, $c), [], "Found chain (<name>): <pos>");
                 }
             }
         }
@@ -153,7 +156,7 @@ class World {
             }
 
             my %plumage;
-            for $group.positions[] -> $pos {
+            for $group.stones[] -> $pos {
                 for $pos.neighbors -> $n {
                     my ($r, $c) = $n.r, $n.c;
                     next unless $.board[$r][$c] eq '.';
@@ -396,8 +399,8 @@ class World {
         $.logger.log: "Invalidated links: @invalidated-links».name.join(", ")";
         my $invalidated-links = set(@invalidated-links».name);
         @.links.=grep: { .name !∈ $invalidated-links };
-        my $next2g1 = so any($pos.neighbors) eq any($g1.positions);
-        my $next2g2 = so any($pos.neighbors) eq any($g2.positions);
+        my $next2g1 = so any($pos.neighbors) eq any($g1.stones);
+        my $next2g2 = so any($pos.neighbors) eq any($g2.stones);
         die "This is weird -- because if this condition were ever true, why are we here?"
             if $next2g1 && $next2g2;
         my @localgroups;
@@ -408,7 +411,7 @@ class World {
             $g2 = self.extend-group($g2, $pos);
         }
         else {
-            my $g3 = self.create-group([$pos], "Found chain <name>: <name>");
+            my $g3 = self.create-group([$pos], [], "Found chain <name>: <name>");
             @localgroups.push: $g3;
         }
         @localgroups.unshift: $g1, $g2;

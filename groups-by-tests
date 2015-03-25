@@ -206,8 +206,17 @@ class World {
         }
     }
 
-    sub upgrade(@links, $g1, $g2, $new-group, $logger) {
-        for @links {
+    method upgrade($g1, $g2, $new-group) {
+        sub links-between-groups {
+            $.links.grep({ .groups[0] === $g1 && .groups[1] === $g2 })
+        }
+
+        sub affected-links {
+            my $lbg = set(links-between-groups);
+            $.links.grep({ $_ !∈ $lbg && (.groups[0] | .groups[1] === $g1 | $g2) });
+        }
+
+        for affected-links() {
             my $name = .name;
             my $old-groups = .groups».name.join("+");
             if .groups[0] === $g1 | $g2 {
@@ -215,7 +224,7 @@ class World {
             }
             .groups[1] = $new-group;
             my $new-groups = .groups».name.join("+");
-            $logger.log: "    Upgrading $name: $old-groups -> $new-groups";
+            $.logger.log: "    Upgrading $name: $old-groups -> $new-groups";
         }
     }
 
@@ -263,7 +272,7 @@ class World {
                 return $new-group;
             }
             invalidate(self.links, @nl, $.logger);
-            upgrade(affected-links(), $g1, $g2, $new-group, $.logger);
+            self.upgrade($g1, $g2, $new-group);
         }
         else {
             SEARCH:
@@ -296,7 +305,7 @@ class World {
                             %eliminated{$g1.name}++;
                             %eliminated{$g2.name}++;
                             invalidate(self.links, @nl, $.logger);
-                            upgrade(affected-links(), $g1, $g2, $new-group, $.logger);
+                            self.upgrade($g1, $g2, $new-group);
                             last SEARCH;
                         }
                     }

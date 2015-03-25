@@ -228,7 +228,7 @@ class World {
         }
     }
 
-    method try-merging-two-groups($g1, $g2, %eliminated, $orig-g1-name?, $orig-g2-name?) {
+    method try-merging-two-groups($g1, $g2, &callback, $orig-g1-name?, $orig-g2-name?) {
         sub links-between-groups {
             $.links.grep({ .groups[0] === $g1 && .groups[1] === $g2 })
         }
@@ -251,14 +251,8 @@ class World {
             }
         }
 
-        sub affected-links {
-            my $lbg = set(links-between-groups);
-            $.links.grep({ $_ !∈ $lbg && (.groups[0] | .groups[1] === $g1 | $g2) });
-        }
-
         sub handle($new-group, @nl) {
-            %eliminated{$g1.name}++;
-            %eliminated{$g2.name}++;
+            &callback($new-group);
             invalidate(self.links, @nl, $.logger);
             self.upgrade($g1, $g2, $new-group);
         }
@@ -274,7 +268,6 @@ class World {
                 && $orig-g2-name eq $g2.name {
 
                 @.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
-                return $new-group;
             }
             handle($new-group, @nl);
         }
@@ -303,12 +296,9 @@ class World {
                         @.groups.push($new-group);
                         if $orig-g1-name {
                             @.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
-                            return $new-group;
                         }
-                        else {
-                            handle($new-group, @nl);
-                            last SEARCH;
-                        }
+                        handle($new-group, @nl);
+                        return;
                     }
                 }
             }
@@ -335,13 +325,17 @@ class World {
                 next GROUP2 if %eliminated{$g2.name};
 
                 if defined($orig-g1-name) {
-                    my $new-group = self.try-merging-two-groups($g1, $g2, %eliminated, $orig-g1-name, $orig-g2-name);
-                    if $new-group {
-                        return $new-group;
-                    }
+                    self.try-merging-two-groups($g1, $g2, -> $ng {
+                        %eliminated{$g1.name}++;
+                        %eliminated{$g2.name}++;
+                        return $ng;
+                    }, $orig-g1-name, $orig-g2-name);
                 }
                 else {
-                    self.try-merging-two-groups($g1, $g2, %eliminated);
+                    self.try-merging-two-groups($g1, $g2, -> $ {
+                        %eliminated{$g1.name}++;
+                        %eliminated{$g2.name}++;
+                    });
                 }
             }
         }

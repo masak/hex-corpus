@@ -324,19 +324,12 @@ class World {
                 next GROUP1 if %eliminated{$g1.name};
                 next GROUP2 if %eliminated{$g2.name};
 
-                if defined($orig-g1-name) {
-                    self.try-merging-two-groups($g1, $g2, -> $ng {
-                        %eliminated{$g1.name}++;
-                        %eliminated{$g2.name}++;
-                        return $ng;
-                    }, $orig-g1-name, $orig-g2-name);
-                }
-                else {
-                    self.try-merging-two-groups($g1, $g2, -> $ {
-                        %eliminated{$g1.name}++;
-                        %eliminated{$g2.name}++;
-                    });
-                }
+                self.try-merging-two-groups($g1, $g2, -> $ng {
+                    %eliminated{$g1.name}++;
+                    %eliminated{$g2.name}++;
+                    return $ng
+                        if defined($orig-g1-name);
+                }, $orig-g1-name, $orig-g2-name);
             }
         }
         @.groups.=grep({ !%eliminated{.name} });

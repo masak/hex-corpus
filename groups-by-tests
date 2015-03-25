@@ -256,13 +256,18 @@ class World {
             $.links.grep({ $_ !∈ $lbg && (.groups[0] | .groups[1] === $g1 | $g2) });
         }
 
+        sub handle($new-group, @nl) {
+            %eliminated{$g1.name}++;
+            %eliminated{$g2.name}++;
+            invalidate(self.links, @nl, $.logger);
+            self.upgrade($g1, $g2, $new-group);
+        }
+
         my @lbg = links-between-groups();
         my @nl = non-overlapping(@lbg);
         if @nl >= 2 {
             my $new-group = self.create-combined-group($g1, $g2, @nl);
             @.groups.push($new-group);
-            %eliminated{$g1.name}++;
-            %eliminated{$g2.name}++;
             # XXX: I can imagine situations where this is not true but we should still declare success
             if defined($orig-g1-name)
                 && $orig-g1-name eq $g1.name
@@ -271,8 +276,7 @@ class World {
                 @.necessary-pos = @nl.map({ .pos, .helpers[] }).flat;
                 return $new-group;
             }
-            invalidate(self.links, @nl, $.logger);
-            self.upgrade($g1, $g2, $new-group);
+            handle($new-group, @nl);
         }
         else {
             SEARCH:
@@ -302,10 +306,7 @@ class World {
                             return $new-group;
                         }
                         else {
-                            %eliminated{$g1.name}++;
-                            %eliminated{$g2.name}++;
-                            invalidate(self.links, @nl, $.logger);
-                            self.upgrade($g1, $g2, $new-group);
+                            handle($new-group, @nl);
                             last SEARCH;
                         }
                     }

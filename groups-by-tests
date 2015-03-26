@@ -49,6 +49,38 @@ class Group {
     has Str $.name;
     has @.stones;
     has @.holes;
+
+    method halo($gens, @board) {
+        my @positions = @.stones;
+        my %seen = @.stones, @.holes X=> 1;
+
+        for ^$gens {
+            my @next;
+
+            for @positions -> $pos {
+                for $pos.neighbors -> $n {
+                    next if %seen{$n}++;
+                    next if @board[$n.r][$n.c] ne '.';
+
+                    @next.push($n);
+                }
+                for $pos.far-neighbors -> [$n, $h1, $h2] {
+                    next if %seen{$n}++;
+                    next if @board[$n.r][$n.c] ne '.';
+                    next if @board[$h1.r][$h1.c] ne '.';
+                    next if @board[$h2.r][$h2.c] ne '.';
+                    next if $h1 eq any(@.holes);
+                    next if $h2 eq any(@.holes);
+
+                    @next.push($n);
+                }
+            }
+
+            @positions := @next;
+        }
+
+        return @positions;
+    }
 }
 
 class Link {

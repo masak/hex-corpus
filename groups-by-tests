@@ -361,7 +361,7 @@ class World {
         for 0..Inf -> $i1 {
             last if $i1 >= @groups;
 
-            my $g1 = @.groups[$i1];
+            my $g1 = @groups[$i1];
             next GROUP1 if %eliminated{$g1.name};
 
             GROUP2:
@@ -392,7 +392,7 @@ class World {
         for 0..Inf -> $i1 {
             last if $i1 >= @groups;
 
-            my $g1 = @.groups[$i1];
+            my $g1 = @groups[$i1];
             next GROUP1 if %eliminated{$g1.name};
 
             GROUP2:

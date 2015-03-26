@@ -200,6 +200,8 @@ class World {
                     next unless $.board[$r][$c] eq '.';
                     next unless $.board[$h1.r][$h1.c] eq '.';
                     next unless $.board[$h2.r][$h2.c] eq '.';
+                    next if $h1 eq any($group.holes);
+                    next if $h2 eq any($group.holes);
                     next if %plumage{"$r;$c"} :exists;
                     %plumage{"$r;$c%$h1,$h2"} = Feather.new(:pos($n), :helpers($h1, $h2));
                 }

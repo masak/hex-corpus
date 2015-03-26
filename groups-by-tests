@@ -443,7 +443,7 @@ class World {
             $g2 = self.extend-group($g2, $pos);
         }
         else {
-            my $g3 = self.create-group([$pos], [], "Found chain <name>: <name>");
+            my $g3 = self.create-group([$pos], [], "Found chain <name>: <pos>");
             @localgroups.push: $g3;
         }
         @localgroups.unshift: $g1, $g2;

@@ -989,15 +989,17 @@ given Logger.new -> $logger {
             Upgrading l7: A+C -> A+D
         Sacrificing l5 to try (5, 12):
             Put blocker (b1): (6, 10)
-            Invalidated links: l2, l3, l4, l5, l6, l7
+            Invalidated links: l4, l5, l7
             D extended with (5, 12)
             Weak A+D link (l10): (4, 11) % (4, 12), (5, 11)
             Weak A+D link (l11): (4, 12) % (3, 12), (4, 11)
-            Weak A+D link (l12): (5, 11)
-            Forming group (E): A, D || l11, l12
-        Weak A+D link (l13): (5, 12) % (3, 12), (4, 11), (4, 12), (5, 11)
-        Forming group (F): A, D || l5, l13
+            Weak A+D link (l12): (4, 12) % (4, 11), (5, 11)
+            Weak A+D link (l13): (5, 11)
+            Forming group (E): A, D || l11, l13
+        Weak A+D link (l14): (5, 12) % (3, 12), (4, 11), (4, 12), (5, 11)
+        Forming group (F): A, D || l5, l14
         Resulting groups: F
+            Invalidating l4, l7
         LOG
 }
 

@@ -375,8 +375,11 @@ class World {
                 next GROUP2 if %eliminated{$g2.name};
 
                 self.try-merging-with-links($g1, $g2, -> $ng {
+                    # XXX: I can imagine situations where this is not true but we should still declare success
                     return $ng
-                        if defined($orig-g1-name);
+                        if defined($orig-g1-name)
+                            && $g1.name eq $orig-g1-name
+                            && $g2.name eq $orig-g2-name;
 
                     %eliminated{$g1.name}++;
                     %eliminated{$g2.name}++;

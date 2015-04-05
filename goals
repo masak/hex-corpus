@@ -1,0 +1,17 @@
+* finish up catalogue-links. it finds all formations in all games in the
+  corpus, normalizes each of them, and dies if it doesn't recognize one. the
+  idea is to get a good picture of how links may conflict within and between
+  group connections.
+
+* follow up on the idea that tether links can be found relatively cheaply by
+  looking for a small set of patterns. do this with tests. steal liberally
+  from groups-by-tests when doing so. maybe integrate learnings into
+  groups-by-tests.
+
+* come up with an abstracted way to build groups from all the link information
+  between chains. do this with tests. use the data from catalogue-links as
+  inspiration.
+
+* build an HTML page for each move in each game.
+
+* incorporate the group/formation information into the HTML page.

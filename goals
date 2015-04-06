@@ -8,6 +8,9 @@
   from groups-by-tests when doing so. maybe integrate learnings into
   groups-by-tests.
 
+* integrate the new tether-finding strategy back into catalogue-links. see if
+  any new formation types fall out.
+
 * come up with an abstracted way to build groups from all the link information
   between chains. do this with tests. use the data from catalogue-links as
   inspiration.
@@ -15,3 +18,6 @@
 * build an HTML page for each move in each game.
 
 * incorporate the group/formation information into the HTML page.
+
+* try out MCTS as seen in
+  https://project.dke.maastrichtuniversity.nl/games/files/phd/Chaslot_thesis.pdf

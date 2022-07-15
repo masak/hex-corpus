@@ -122,7 +122,8 @@ precise questions.
 
 * Using two or more links between two given chains causes those two chains
   to **meld** together. Melding is an equivalence relation; in particular, it
-  is transitive: if `a ~ b` and `b ~ c`, then `a ~ c`.
+  is transitive: melding `a` with `b` and `b` with `c` (in any order) causes
+  `a` to have melded with `c`.
 
 * A **cluster** is a complete set of choices whether to use each of a set of
   links. A cluster is **maximal** if no link uses can be added to cause another

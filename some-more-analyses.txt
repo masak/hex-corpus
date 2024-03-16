@@ -1,0 +1,42 @@
+## https://littlegolem.net/jsp/game/game.jsp?gid=2351817
+
+1. unusual (but strong) starting move; should swap
+2. escape for left side
+3. block
+4. higher escape
+5. invading on the right
+6. escape for right
+7. invading on the left
+8. minimax
+9. lowering the access to the escape from above
+10. minimax (?)
+...
+13. trying to prevent the two groups from connecting
+14. connecting well to the right, but unclear on the left
+15. widening the rift on the left
+16. trying to go above instead
+17. defending, probably connected to top now
+18. back to trying to connect below on the left; dubious
+19. blocking
+20. bottleneck
+21. connecting to top
+... then a ladder along the bottom; white resigns 
+
+## https://littlegolem.net/jsp/game/game.jsp?gid=2350327
+
+Interesting game. A lot of subtle threats.
+
+27. This turns out to be the crucial move in the game
+
+## https://littlegolem.net/jsp/game/game.jsp?gid=2349293
+
+A nice win for white. Lots of stools.
+
+27. This move is almost certainly a mistake. It's brave, though.
+...
+32. Here is where I see that white will win, in hindsight. All except L2 are basically one connected group.
+
+## https://littlegolem.net/jsp/game/game.jsp?gid=2348484
+
+25. This move indicates that white has made a mistake, by not engaging. Is black connected? I don't quite see it.
+
